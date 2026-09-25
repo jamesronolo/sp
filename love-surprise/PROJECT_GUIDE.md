@@ -165,10 +165,13 @@ sp/
   - Designed as an ultra-compact floating popover anchored neatly under the top navigation bar instead of a screen-blocking full modal overlay.
   - Reduced width (290px max-width on desktop, responsive card on mobile) so hero messages, falling rain, and romantic content remain completely visible and clutter-free ("dili sagbot tan-awon").
   - Features centered **"Our Soundtrack"** title, mini spinning vinyl disc (40px), compact timeline scrubber, mini playback controls, and slim scrollable track list with zero star emojis.
-- **Realtime Music Uploading:**
+- **Realtime Music Uploading & Browser IndexedDB Persistence:**
   - Includes a dedicated `+ Upload Music` button right above the tracklist.
-  - Users can upload any custom local audio file (`.mp3`, `.wav`, `.m4a`, `.ogg`) in realtime without server dependencies, using browser `URL.createObjectURL()`.
-  - The uploaded song automatically prepends to the playlist with an assigned romantic memory cover and begins playing immediately.
+  - When a user uploads a song (`.mp3`, `.wav`, `.m4a`, `.ogg`), it is **persisted directly inside the browser's native IndexedDB (`RomanceMusicDB`)**.
+  - **Zero Disappearance on Refresh & Zero Live-Server Reload Loops ("Bisag unsaon og refresh, dili mawala, dili mag-loop reload"):**
+    - The audio file (Blob) and metadata are stored safely inside the browser's database without altering files on disk while browsing, ensuring VS Code Live Server never triggers unexpected auto-refreshes.
+    - When the user manually refreshes (`F5`), closes, or reopens the browser, the uploaded songs are automatically restored into the playlist and ready to play.
+  - The newly uploaded track is prepended to the top of the playlist with an assigned romantic polaroid cover and begins playing immediately in realtime with zero delay.
 - **Crisp Vector SVG Controls (Zero Emojis):** Replaced emoji characters with clean, modern, luxury SVG icons for play, pause, previous, next, volume, musical note, upload, and chevrons.
 - **Complete Multi-Device Responsiveness:** Fully responsive across all devices (mobile phones down to 320px, tablets, laptops, desktops) with fluid typography, adaptive header buttons, 2-column mobile galleries, and touch-optimized controls.
 - **Algorithmic Fallback:** If any audio file is blocked or unavailable, the native **Web Audio API** `AudioContext` synthesizes a romantic 4-chord progression (`Cmaj9` → `Am9` → `Fmaj7` → `Gsus4`).

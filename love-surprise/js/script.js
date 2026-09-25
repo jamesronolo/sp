@@ -737,8 +737,112 @@
   }
 
   /* ==========================================================================
-     7. ROMANTIC PLAYLIST & MUSIC SYSTEM (6-Track Audio + Web Audio Synth Fallback)
+     7. ROMANTIC PLAYLIST & MUSIC SYSTEM (IndexedDB + Physical Audio Directory Sync)
      ========================================================================== */
+  const MUSIC_DB_NAME = 'RomanceMusicDB';
+  const MUSIC_DB_VERSION = 1;
+  const MUSIC_STORE_NAME = 'uploaded_tracks';
+
+  function openMusicDB() {
+    return new Promise((resolve) => {
+      if (!window.indexedDB) {
+        resolve(null);
+        return;
+      }
+      const request = indexedDB.open(MUSIC_DB_NAME, MUSIC_DB_VERSION);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(MUSIC_STORE_NAME)) {
+          db.createObjectStore(MUSIC_STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = (e) => resolve(e.target.result);
+      request.onerror = (e) => {
+        console.warn('IndexedDB open error:', e);
+        resolve(null);
+      };
+    });
+  }
+
+  async function saveTrackToIndexedDB(trackMeta, audioBlob) {
+    try {
+      const db = await openMusicDB();
+      if (!db) return;
+      const tx = db.transaction(MUSIC_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(MUSIC_STORE_NAME);
+      store.put({
+        id: trackMeta.id,
+        title: trackMeta.title,
+        artist: trackMeta.artist,
+        filename: trackMeta.filename,
+        cover: trackMeta.cover,
+        blob: audioBlob,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      console.warn('IndexedDB save error:', e);
+    }
+  }
+
+  async function loadTracksFromIndexedDB() {
+    try {
+      const db = await openMusicDB();
+      if (!db) return [];
+      return new Promise((resolve) => {
+        const tx = db.transaction(MUSIC_STORE_NAME, 'readonly');
+        const store = tx.objectStore(MUSIC_STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const results = req.result || [];
+          const tracks = results.map(item => {
+            let src = `assets/audio/${encodeURIComponent(item.filename || item.title + '.mp3')}`;
+            if (item.blob) {
+              src = URL.createObjectURL(item.blob);
+            }
+            return {
+              id: item.id,
+              title: item.title,
+              artist: item.artist,
+              src: src,
+              cover: item.cover,
+              filename: item.filename,
+              isUserUploaded: true
+            };
+          });
+          resolve(tracks);
+        };
+        req.onerror = () => resolve([]);
+      });
+    } catch (e) {
+      console.warn('IndexedDB load error:', e);
+      return [];
+    }
+  }
+
+  async function loadCustomSoundtracks() {
+    try {
+      const idbTracks = await loadTracksFromIndexedDB();
+      const existingFilenames = new Set(playlist.map(t => t.filename || t.title));
+      const newTracks = [];
+
+      idbTracks.forEach(tr => {
+        if (!existingFilenames.has(tr.filename) && !existingFilenames.has(tr.title)) {
+          existingFilenames.add(tr.filename);
+          existingFilenames.add(tr.title);
+          newTracks.push(tr);
+        }
+      });
+
+      if (newTracks.length > 0) {
+        playlist.unshift(...newTracks);
+        updatePlaylistCount();
+        renderPlaylistCards();
+      }
+    } catch (err) {
+      console.warn("IndexedDB restore error:", err);
+    }
+  }
+
   function initMusic() {
     if (!cfg.enableMusic) {
       if (musicToggleBtn) musicToggleBtn.style.display = 'none';
@@ -793,6 +897,9 @@
 
     // Update UI elements with initial track info
     updateTrackUI();
+
+    // Restore any custom uploaded songs from physical assets/audio and IndexedDB (never lost on refresh)
+    loadCustomSoundtracks();
 
     // AUTOMATIC PLAY ON OPEN:
     // Attempt playback immediately when the site opens
@@ -1214,7 +1321,7 @@
         musicUploadInput.click();
       });
 
-      musicUploadInput.addEventListener('change', (e) => {
+      musicUploadInput.addEventListener('change', async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
 
@@ -1247,17 +1354,18 @@
             artist: trackArtist,
             src: fileUrl,
             cover: assignedCover,
+            filename: file.name,
             isUserUploaded: true
           };
 
-          // Add to beginning of playlist for immediate priority
+          // 1. Instantly add to playlist and start playing with zero latency
           playlist.unshift(newTrack);
-
           updatePlaylistCount();
           renderPlaylistCards();
-
-          // Immediately select and start playing the uploaded song in realtime
           selectTrack(0, true);
+
+          // 2. Persist in browser IndexedDB immediately (dili mawala bisag i-refresh)
+          saveTrackToIndexedDB(newTrack, file);
         } catch (err) {
           console.error("Error loading uploaded audio:", err);
         }
