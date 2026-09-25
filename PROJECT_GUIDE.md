@@ -119,18 +119,19 @@ sp/
 
 ## 5. Core Features & Functional Modules
 
-### 5.1 Continuous Falling Memory Rain (Multi-Lane Engine)
-- **100% Image Cycling:** Pulls and shuffles all 13 photos from `assets/images/` (`image1.jpg` - `image13.jpg`), ensuring every single memory falls smoothly in a continuous shower.
-- **Zero Header-Freezing Physics:** Eliminates static DOM delays by spawning elements only when actively falling from `translateY(-260px)`, so cards never freeze or get trapped at `top: 0` in the header bar.
-- **Dynamic Lane Allocation:** Viewport width determines lane count (4 lanes for mobile `<600px`, 6 for tablet `<1000px`, 7+ for desktop).
-- **Negative Delay Pre-population:** Initial render uses negative animation offsets so photos are immediately floating mid-air across all heights when the page opens.
-- **DOM Recycling & Seamless Flow:** Cards listen for `animationend` events, removing themselves from the DOM and scheduling the next staggered photo to maintain a perpetual, natural waterfall effect.
+### 5.1 Gentle 16-Second Non-Overlapping Memory Rain (Zero Duplicates Engine)
+- **Always in the Background (`z-index: 1`):** The memory rain strictly lives in the background layer behind the hero glass cards, content, counter boxes, and gallery, ensuring text and interactive buttons are always in front and completely unobstructed.
+- **Slow 16-Second Majestic Drift:** The falling animation duration is locked to a calming, romantic 16.0s (`16s`), creating a dreamy, slow-motion shower of memories that is never rushed or chaotic.
+- **Zero Horizontal & Vertical Overlapping ("Dili Mag Sapaw-Sapaw"):** Each lane is assigned a dedicated vertical column track centered at `((laneIndex + 0.5) / laneCount) * 100%` with wide gutters. Exactly **one active card exists per lane at any moment**, completely eliminating stacking or colliding cards.
+- **Zero Duplicate Images On Screen:** An active image tracking registry (`activeImageSrcs = new Set()`) monitors all photos currently visible mid-air. When a lane prepares to spawn a new card, it strictly filters out any photo currently in flight, guaranteeing that all cards on screen always display 100% unique photos from the 13 available images.
+- **Staggered Multi-Height Inception:** Pre-populates lanes with evenly spaced negative animation delay offsets (`0.15`, `0.70`, `0.35`, `0.85`, `0.50` of the 16-second cycle), ensuring photos are gracefully distributed across all altitudes immediately on page load.
+- **DOM Recycling & Seamless Continuity:** Once a card reaches the bottom of the viewport, it cleanly unmounts from the DOM, frees its image from the active registry, and triggers the next unique photo after a brief staggered delay.
 
-### 5.2 Click-to-Freeze & High-Resolution Lightbox Modal
-- Clicking or tapping any falling card immediately adds the `.paused` CSS class to `#rain-container`, freezing CSS animations in place.
-- Opens a luxury frosted glass modal displaying high-resolution media, full caption, and counter indicator (`X of Y`).
-- Automatically handles video playback, muting background ambient tracks if desired, and pausing video playback when closed.
-- Closing the modal (`✕` button, clicking backdrop, or pressing `Escape`) resumes all falling lanes from their exact mid-air coordinates.
+### 5.2 Video Audio Auto-Pause/Resume & High-Resolution Lightbox Modal
+- **Smart Background Audio Ducking/Resume:** When clicking or viewing any video, the background soundtrack automatically stops/pauses so video audio plays with zero interference. When closing the modal, returning to the page, or when the video finishes, the background music automatically continues right where it left off.
+- **Continuous Background Rain:** While viewing a video or photo in the lightbox, the falling image shower remains 100% active and clearly visible in the background through a crystal-clear backdrop (`rgba(8, 5, 12, 0.45)` with `backdrop-filter: none;`). When closing the video, the image rain continues falling completely normally with zero freezing or stuttering.
+- **First-Click Protection:** If the user's very first action on the page is clicking a video, background music stays off while the video plays and automatically starts once returning from the video.
+- **Keyboard & Navigation Shortcuts:** Supports arrow keys (`‹` / `›`) to browse through memories, `Escape` or backdrop click to close, and seamless switching between videos and photos.
 
 ### 5.3 Live "Together Since" Elapsed Counter
 - Computes difference between current system time (`Date.now()`) and `CONFIG.sinceDate`.
@@ -157,12 +158,19 @@ sp/
   4. *Libu-Libong Buwan (Uuwian)* — Kyle Raphael (Cover: `image4.jpg`)
   5. *Lalim* — MATÉO (Cover: `image5.jpg`)
   6. *Panaginip* — nicole (Cover: `image6.jpg`)
-- **Automatic Playback & Auto-Advance:**
-  - Even if no specific song is selected, the soundtrack automatically begins playing on the user's first interaction or when clicking the music button.
+- **Instant Automatic Playback on Open & Auto-Advance:**
+  - Attempts immediate audio playback as soon as the website is opened. If the browser's autoplay policy temporarily restricts audio before user engagement, gesture capture listeners on click, touch, scroll, pointer, and keydown immediately trigger seamless playback on the very first touch or interaction.
   - Automatically advances to the next track upon track completion so music plays continuously.
-- **Interactive Playlist Modal & Glass Drawer:**
-  - Displays all 6 songs with animated album cover art, glowing "Now Playing" badges, and animated equalizer bars.
-  - Integrated playback scrubber with current time / duration, volume control slider, next/previous buttons, and vinyl disc rotation animation.
+- **Extra-Compact Dropdown Popover Design (Gamay Ra / Reduced Screen Space):**
+  - Designed as an ultra-compact floating popover anchored neatly under the top navigation bar instead of a screen-blocking full modal overlay.
+  - Reduced width (290px max-width on desktop, responsive card on mobile) so hero messages, falling rain, and romantic content remain completely visible and clutter-free ("dili sagbot tan-awon").
+  - Features centered **"Our Soundtrack"** title, mini spinning vinyl disc (40px), compact timeline scrubber, mini playback controls, and slim scrollable track list with zero star emojis.
+- **Realtime Music Uploading:**
+  - Includes a dedicated `+ Upload Music` button right above the tracklist.
+  - Users can upload any custom local audio file (`.mp3`, `.wav`, `.m4a`, `.ogg`) in realtime without server dependencies, using browser `URL.createObjectURL()`.
+  - The uploaded song automatically prepends to the playlist with an assigned romantic memory cover and begins playing immediately.
+- **Crisp Vector SVG Controls (Zero Emojis):** Replaced emoji characters with clean, modern, luxury SVG icons for play, pause, previous, next, volume, musical note, upload, and chevrons.
+- **Complete Multi-Device Responsiveness:** Fully responsive across all devices (mobile phones down to 320px, tablets, laptops, desktops) with fluid typography, adaptive header buttons, 2-column mobile galleries, and touch-optimized controls.
 - **Algorithmic Fallback:** If any audio file is blocked or unavailable, the native **Web Audio API** `AudioContext` synthesizes a romantic 4-chord progression (`Cmaj9` → `Am9` → `Fmaj7` → `Gsus4`).
 
 ### 5.7 Accessibility & Mobile Responsiveness

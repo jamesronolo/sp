@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="An interactive romantic surprise page with falling memory rain, live together counter, and heartfelt notes.">
   <meta name="theme-color" content="#0a070e">
-  <title>For You — Forever & Always 💖</title>
+  <title>Lyka — Forever & Always 💖</title>
 
-  <!-- Google Fonts: Editorial Serif, Modern Sans, and Flowing Script -->
+  <!-- Favicon (Heart Icon) -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23ff4d6d' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/></svg>">
+  <link rel="apple-touch-icon" href="assets/images/image1.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
@@ -26,8 +29,8 @@
 
   <!-- Top Controls & Navigation Bar -->
   <header class="top-bar">
-    <a href="#" class="brand-logo" aria-label="Home">
-      <span>For You</span>
+    <a href="#" class="brand-logo" aria-label="Lyka">
+      <span>Lyka</span>
       <span class="brand-heart">💖</span>
     </a>
 
@@ -42,7 +45,11 @@
       <div class="music-pill-group">
         <!-- Quick Play / Pause Button -->
         <button id="music-toggle-btn" class="glass-pill-btn music-toggle" aria-label="Toggle background music">
-          <span class="music-note-icon">🎵</span>
+          <span class="music-note-icon">
+            <svg class="ui-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+          </span>
           <span class="music-toggle-text">Music: Off</span>
           <span class="music-visualizer" aria-hidden="true">
             <span class="visualizer-bar"></span>
@@ -57,7 +64,11 @@
             <img src="assets/images/image1.jpg" alt="Track Cover" id="top-bar-cover-img" class="top-bar-cover-img">
           </span>
           <span class="playlist-btn-text" id="top-bar-track-title">Choose Song</span>
-          <span class="playlist-chevron" aria-hidden="true">▾</span>
+          <span class="playlist-chevron" aria-hidden="true">
+            <svg class="ui-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
         </button>
       </div>
     </div>
@@ -75,7 +86,7 @@
 
         <h1 class="hero-title">
           Forever & Always
-          <span class="hero-partner-name" id="partner-name-display">My Love</span>
+          <span class="hero-partner-name" id="partner-name-display">Lyka</span>
         </h1>
 
         <p class="hero-subtitle">
@@ -197,15 +208,12 @@
     </div>
   </div>
 
-  <!-- Romantic Soundtrack Playlist Modal (6-Song Selector with Album Covers) -->
-  <div id="playlist-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Romantic Music Playlist">
-    <div class="playlist-modal-card">
-      <button id="playlist-close-btn" class="modal-close-btn" aria-label="Close playlist">✕</button>
-
-      <div class="playlist-header">
-        <span class="playlist-badge">🎶 Our Soundtrack</span>
-        <h3 class="playlist-title">Choose Our Song</h3>
-        <p class="playlist-subtitle">Pick any song to set the mood, or let our romantic playlist play automatically.</p>
+  <!-- Romantic Soundtrack Playlist Popover (Compact Player with Realtime Upload) -->
+  <div id="playlist-modal" class="modal-overlay playlist-popover-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Romantic Music Playlist">
+    <div class="playlist-modal-card mini-playlist-popover">
+      <div class="popover-header">
+        <h3 class="popover-title-centered">Our Soundtrack</h3>
+        <button id="playlist-close-btn" class="popover-close-btn" aria-label="Close playlist">✕</button>
       </div>
 
       <!-- Now Playing Feature Disc & Timeline -->
@@ -217,7 +225,7 @@
         <div class="now-playing-details">
           <div class="now-playing-badge-row">
             <span class="now-playing-pill" id="banner-status-pill">Now Playing</span>
-            <span class="now-playing-sound-hint">✨ Auto-playing soundtrack</span>
+            <span class="now-playing-sound-hint" id="banner-track-count">6 Songs</span>
           </div>
           <h4 class="now-playing-title" id="banner-title">Teka Lang</h4>
           <p class="now-playing-artist" id="banner-artist">EMMAN</p>
@@ -233,23 +241,51 @@
 
       <!-- Playback Controls Bar -->
       <div class="playlist-controls-row">
-        <button id="ctrl-prev-btn" class="playlist-ctrl-btn" aria-label="Previous song" title="Previous song">⏮</button>
-        <button id="ctrl-play-pause-btn" class="playlist-ctrl-btn ctrl-play-main" aria-label="Play or pause" title="Play or pause">▶</button>
-        <button id="ctrl-next-btn" class="playlist-ctrl-btn" aria-label="Next song" title="Next song">⏭</button>
+        <button id="ctrl-prev-btn" class="playlist-ctrl-btn" aria-label="Previous song" title="Previous song">
+          <svg class="ui-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
+        </button>
+        <button id="ctrl-play-pause-btn" class="playlist-ctrl-btn ctrl-play-main" aria-label="Play or pause" title="Play or pause">
+          <svg class="ui-icon icon-play" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+        <button id="ctrl-next-btn" class="playlist-ctrl-btn" aria-label="Next song" title="Next song">
+          <svg class="ui-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
+        </button>
         
         <div class="volume-slider-group" title="Adjust volume">
-          <span class="volume-icon">🔊</span>
+          <span class="volume-icon">
+            <svg class="ui-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          </span>
           <input type="range" id="player-volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="0.65" aria-label="Volume slider">
         </div>
       </div>
 
-      <!-- 6 Songs Grid -->
+      <!-- Realtime Upload & Songs Header Bar -->
+      <div class="playlist-action-bar">
+        <span class="playlist-action-label" id="playlist-action-label">Tracklist</span>
+        <button id="upload-music-btn" class="playlist-upload-btn" title="Upload your own song in realtime (.mp3, .wav, .m4a)">
+          <svg class="ui-icon" viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          <span>Upload Music</span>
+        </button>
+        <input type="file" id="music-upload-input" accept="audio/*" style="display: none;">
+      </div>
+
+      <!-- Songs Scrollable Container -->
       <div class="playlist-tracks-grid" id="playlist-tracks-container" role="list" aria-label="Available Songs">
-        <!-- 6 Song cards injected dynamically from CONFIG.playlist -->
+        <!-- Song cards injected dynamically from CONFIG.playlist & user uploads -->
       </div>
 
       <div class="playlist-footer-hint">
-        <span>💕 Music will keep playing seamlessly even if you don't choose a song</span>
+        <span>Plays smoothly & auto-advances</span>
       </div>
     </div>
   </div>

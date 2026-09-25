@@ -9,7 +9,7 @@
 
 const CONFIG = {
   // 💖 HER NAME: Displayed in the hero title as "for <partnerName>"
-  partnerName: "My Love",
+  partnerName: "Lyka",
 
   // 🌹 HERO HEADINGS & ROMANTIC SUBTITLE
   heroTitlePrefix: "Forever & Always",
@@ -20,8 +20,10 @@ const CONFIG = {
   sinceDate: "2023-02-14",
 
   // 🌧️ FALLING RAIN SETTINGS
-  // rainLanes: How many items fall down the screen simultaneously (desktop)
-  rainLanes: 6,
+  // rainLanes: Dedicated non-overlapping columns across the screen (desktop)
+  rainLanes: 5,
+  // rainDuration: Slow, gentle romantic fall speed (in seconds)
+  rainDuration: 16,
   
   // 🎵 PLAYLIST & MUSIC SETTINGS
   // Set to true to enable music controls and background soundtrack

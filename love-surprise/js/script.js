@@ -37,6 +37,7 @@
   let currentTrackIndex = 0;
   let isSeeking = false;
   let hasAutoStarted = false;
+  let wasMusicPlayingBeforeVideo = false;
 
   // Playlist array from config or fallback
   const playlist = (cfg.playlist && cfg.playlist.length > 0) ? cfg.playlist : [
@@ -91,6 +92,9 @@
   const bannerTitle = document.getElementById('banner-title');
   const bannerArtist = document.getElementById('banner-artist');
   const bannerStatusPill = document.getElementById('banner-status-pill');
+  const bannerTrackCount = document.getElementById('banner-track-count');
+  const uploadMusicBtn = document.getElementById('upload-music-btn');
+  const musicUploadInput = document.getElementById('music-upload-input');
   const playerProgressBar = document.getElementById('player-progress-bar');
   const playerTimeCurrent = document.getElementById('player-time-current');
   const playerTimeDuration = document.getElementById('player-time-duration');
@@ -167,12 +171,14 @@
   }
 
   /* ==========================================================================
-     3. INFINITE CONTINUOUS FALLING MEMORY RAIN (ALL IMAGES FROM ASSETS/IMAGES)
+     3. SLOW 16-SECOND NON-OVERLAPPING MEMORY RAIN (ZERO DUPLICATES ON SCREEN)
      ========================================================================== */
-  let imagePool = [];
+  const RAIN_DURATION = 16; // Strictly 16 seconds slow, gentle romantic fall
+  const activeImageSrcs = new Set();
+  let recentImageHistory = [];
+  let currentActiveLaneCount = 0;
 
-  function getNextRainImage() {
-    // Only use all image assets from cfg.media
+  function getAvailableRainImage() {
     const allImages = (cfg.media && cfg.media.length > 0)
       ? cfg.media.filter(m => m.type === 'image')
       : [];
@@ -181,57 +187,77 @@
       return cfg.media[0] || { type: 'image', src: 'assets/images/image1.jpg', caption: 'Our Memory' };
     }
 
-    // Reshuffle when pool runs empty to cycle all 13 images evenly
-    if (imagePool.length === 0) {
-      imagePool = [...allImages].sort(() => Math.random() - 0.5);
+    // Strictly exclude images currently visible on screen to guarantee NO duplicates!
+    let available = allImages.filter(item => !activeImageSrcs.has(item.src));
+    if (available.length === 0) {
+      available = allImages;
     }
 
-    return imagePool.pop();
+    // Prefer images that were not in recent history so all 13 photos cycle evenly
+    const fresh = available.filter(item => !recentImageHistory.includes(item.src));
+    const pool = fresh.length > 0 ? fresh : available;
+
+    const selectedItem = pool[Math.floor(Math.random() * pool.length)];
+
+    activeImageSrcs.add(selectedItem.src);
+    recentImageHistory.push(selectedItem.src);
+    if (recentImageHistory.length > 8) {
+      recentImageHistory.shift();
+    }
+
+    return selectedItem;
+  }
+
+  function releaseRainImage(src) {
+    if (src) {
+      activeImageSrcs.delete(src);
+    }
   }
 
   function getLaneCount() {
     const width = window.innerWidth;
-    if (width < 600) return 4;
-    if (width < 1000) return 6;
-    return cfg.rainLanes || 7;
+    if (width < 500) return 2;       // Mobile: 2 dedicated columns
+    if (width < 800) return 3;       // Tablet / Wide Phone: 3 dedicated columns
+    if (width < 1150) return 4;      // Small Desktop: 4 dedicated columns
+    return cfg.rainLanes || 5;       // Desktop: 5 dedicated columns
   }
 
   function initRain() {
     if (!rainContainer || !cfg.media || cfg.media.length === 0) return;
 
     rainContainer.innerHTML = '';
+    activeImageSrcs.clear();
+    recentImageHistory = [];
+
     const laneCount = getLaneCount();
-    const laneWidthPct = 100 / laneCount;
+    currentActiveLaneCount = laneCount;
 
-    // Immediately pre-populate the screen so images are already drifting mid-air at all heights
+    // Staggered initial heights so images are smoothly distributed across the screen:
+    // Exactly 1 card per lane, eliminating vertical stacking!
+    const staggerFractions = [0.15, 0.70, 0.35, 0.85, 0.50];
+
     for (let lane = 0; lane < laneCount; lane++) {
-      // Stagger 1: Card already halfway or partway down the viewport
-      const fraction = 0.2 + ((lane * 0.27) % 0.65);
-      spawnItemInLane(lane, laneWidthPct, true, fraction);
-
-      // Stagger 2: Second wave starting right away from above the top edge
-      const launchDelay = 400 + lane * 450;
-      setTimeout(() => {
-        if (!isRainPaused) {
-          spawnItemInLane(lane, laneWidthPct, false, 0);
-        }
-      }, launchDelay);
+      const fraction = staggerFractions[lane % staggerFractions.length];
+      spawnCardForLane(lane, laneCount, true, fraction);
     }
 
-    // Re-adjust lanes on resize
+    // Smooth resize handler
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        // Adjust existing lane coordinates if needed
-      }, 300);
+        const newCount = getLaneCount();
+        if (newCount !== currentActiveLaneCount) {
+          initRain();
+        }
+      }, 400);
     });
   }
 
-  function spawnItemInLane(laneIndex, laneWidthPct, isPrePopulate = false, prePopulateFraction = 0.5) {
+  function spawnCardForLane(laneIndex, laneCount, isPrePopulate = false, prePopulateFraction = 0.5) {
     if (!rainContainer || isRainPaused) return;
 
-    const mediaItem = getNextRainImage();
+    const mediaItem = getAvailableRainImage();
     const mediaIndex = cfg.media.indexOf(mediaItem);
 
     // Create Card element
@@ -241,32 +267,28 @@
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label', `Falling memory: ${mediaItem.caption || 'Memory'}`);
 
-    // Randomize position within the lane (slight organic horizontal drift)
-    const minLeft = laneIndex * laneWidthPct;
-    const maxOffset = Math.max(laneWidthPct - 12, 1);
-    const offset = Math.random() * maxOffset;
-    const leftPos = Math.max(2, Math.min(minLeft + offset, 90));
-    card.style.left = `${leftPos}%`;
+    // Strictly locked to its own dedicated lane column center:
+    // Eliminates horizontal drift into adjacent lanes ("dili mag sapawsapaw")
+    const centerPct = ((laneIndex + 0.5) / laneCount) * 100;
+    card.style.left = `${centerPct}%`;
 
-    // Duration for natural rain fall (8s to 12s)
-    const duration = 8 + Math.random() * 4;
-    const rotStart = -10 + Math.random() * 20;
-    const rotEnd = -12 + Math.random() * 24;
-    const cardRot = -6 + Math.random() * 12;
+    // Subtle gentle tilt within safe non-overlapping bounds
+    const rotStart = -3 + Math.random() * 6;
+    const rotEnd = -3 + Math.random() * 6;
+    const cardRot = -2 + Math.random() * 4;
 
     card.style.setProperty('--rot-start', `${rotStart}deg`);
     card.style.setProperty('--rot-end', `${rotEnd}deg`);
     card.style.setProperty('--rot', `${cardRot}deg`);
-    card.style.animationDuration = `${duration}s`;
 
-    // CRITICAL: NEVER set a positive animation-delay on an element attached to DOM!
-    // A positive delay causes the element to sit frozen at the top until delay expires.
+    // Strictly 16 seconds slow, graceful romantic fall!
+    card.style.animationDuration = `${RAIN_DURATION}s`;
+
     if (isPrePopulate) {
-      // Negative delay places the card already mid-flight down the screen
-      const initialOffset = -(duration * prePopulateFraction);
+      // Negative delay places the card already mid-flight down the screen on initial load
+      const initialOffset = -(RAIN_DURATION * prePopulateFraction);
       card.style.animationDelay = `${initialOffset}s`;
     } else {
-      // Starts falling immediately from above the screen
       card.style.animationDelay = `0s`;
     }
 
@@ -282,7 +304,7 @@
     const mediaWrapper = document.createElement('div');
     mediaWrapper.className = 'falling-media-wrapper';
 
-    // Pure image element for all falling memories (guarantees silky smooth 60fps fall)
+    // Pure image element for all falling memories
     const img = document.createElement('img');
     img.src = mediaItem.src;
     img.alt = mediaItem.caption || "Romantic memory";
@@ -307,7 +329,7 @@
 
     card.appendChild(inner);
 
-    // CLICK EVENT: Freeze rain and open modal lightbox!
+    // CLICK EVENT: Open modal lightbox!
     const openCardMemory = (e) => {
       e.stopPropagation();
       openModal(mediaIndex >= 0 ? mediaIndex : 0);
@@ -321,20 +343,22 @@
       }
     });
 
-    // When the falling animation completes, remove card & spawn next one without frozen delay!
+    // When the 16s falling animation completes, remove card, release image from active pool,
+    // and spawn the next unique memory in this exact lane without any overlap!
     card.addEventListener('animationend', () => {
       card.remove();
-      // Wait a slight random interval before appending the next card so it doesn't freeze in DOM
-      const pauseMs = 250 + Math.random() * 800;
+      releaseRainImage(mediaItem.src);
+
+      // Brief gentle pause before launching the next card in this lane
+      const pauseMs = 300 + Math.random() * 500;
       setTimeout(() => {
         if (!isRainPaused) {
-          spawnItemInLane(laneIndex, laneWidthPct, false, 0);
+          spawnCardForLane(laneIndex, laneCount, false, 0);
         } else {
-          // If rain is currently frozen/paused by modal, retry once unpaused
           const checkUnpause = setInterval(() => {
             if (!isRainPaused) {
               clearInterval(checkUnpause);
-              spawnItemInLane(laneIndex, laneWidthPct, false, 0);
+              spawnCardForLane(laneIndex, laneCount, false, 0);
             }
           }, 400);
         }
@@ -356,10 +380,6 @@
   }
 
   function resumeRain() {
-    // Only resume if modal is not currently open
-    if (mediaModal && mediaModal.classList.contains('active')) return;
-    if (noteModal && noteModal.classList.contains('active')) return;
-
     isRainPaused = false;
     if (rainContainer) {
       rainContainer.classList.remove('paused');
@@ -477,15 +497,29 @@
   }
 
   /* ==========================================================================
-     5. LIGHTBOX MODAL (FREEZES RAIN WHILE OPEN, RESUMES ON CLOSE)
+     5. LIGHTBOX MODAL (AUTO-PAUSES MUSIC ON VIDEOS, RESUMES ON CLOSE, RAIN CONTINUES)
      ========================================================================== */
   function openModal(index) {
     if (!cfg.media || cfg.media.length === 0) return;
 
     currentModalIndex = index;
-    // FREEZE THE RAIN
-    pauseRain();
+    const item = cfg.media[currentModalIndex];
 
+    // Automatically pause background music if opening a video
+    if (item && item.type === 'video') {
+      if (isMusicPlaying) {
+        wasMusicPlayingBeforeVideo = true;
+        stopMusic();
+      } else if (cfg.autoPlayOnFirstClick && !hasAutoStarted) {
+        // If this is the user's first click, don't start music now, but schedule it to start when returning!
+        hasAutoStarted = true;
+        wasMusicPlayingBeforeVideo = true;
+      }
+    } else {
+      wasMusicPlayingBeforeVideo = false;
+    }
+
+    // Raining images KEEP RAINING in the background without pausing!
     updateModalContent();
 
     if (mediaModal) {
@@ -502,7 +536,7 @@
       mediaModal.setAttribute('aria-hidden', 'true');
     }
 
-    // Stop any playing video inside modal
+    // Stop and unload any playing video inside modal
     if (modalMediaStage) {
       const playingVid = modalMediaStage.querySelector('video');
       if (playingVid) {
@@ -511,8 +545,11 @@
       modalMediaStage.innerHTML = '';
     }
 
-    // RESUME THE RAIN!
-    resumeRain();
+    // Automatically resume music if it was playing before viewing the video!
+    if (wasMusicPlayingBeforeVideo) {
+      wasMusicPlayingBeforeVideo = false;
+      startMusic();
+    }
   }
 
   function updateModalContent() {
@@ -531,8 +568,31 @@
       vid.playsInline = true;
       vid.style.maxHeight = '65vh';
       vid.style.maxWidth = '100%';
+
+      // Ensure background music turns off whenever the video plays
+      vid.addEventListener('play', () => {
+        if (isMusicPlaying) {
+          wasMusicPlayingBeforeVideo = true;
+          stopMusic();
+        }
+      });
+
+      // When the video ends, resume background music
+      vid.addEventListener('ended', () => {
+        if (wasMusicPlayingBeforeVideo) {
+          wasMusicPlayingBeforeVideo = false;
+          startMusic();
+        }
+      });
+
       modalMediaStage.appendChild(vid);
     } else {
+      // If we switched from a video to a photo, resume music
+      if (wasMusicPlayingBeforeVideo) {
+        wasMusicPlayingBeforeVideo = false;
+        startMusic();
+      }
+
       const img = document.createElement('img');
       img.src = item.src;
       img.alt = item.caption || "Enlarged Memory";
@@ -550,12 +610,52 @@
   }
 
   function nextModalItem() {
+    const prevItem = cfg.media[currentModalIndex];
+    if (prevItem && prevItem.type === 'video' && modalMediaStage) {
+      const vid = modalMediaStage.querySelector('video');
+      if (vid) vid.pause();
+    }
+
     currentModalIndex = (currentModalIndex + 1) % cfg.media.length;
+    const nextItem = cfg.media[currentModalIndex];
+
+    if (nextItem && nextItem.type === 'video') {
+      if (isMusicPlaying) {
+        wasMusicPlayingBeforeVideo = true;
+        stopMusic();
+      }
+    } else {
+      if (wasMusicPlayingBeforeVideo) {
+        wasMusicPlayingBeforeVideo = false;
+        startMusic();
+      }
+    }
+
     updateModalContent();
   }
 
   function prevModalItem() {
+    const prevItem = cfg.media[currentModalIndex];
+    if (prevItem && prevItem.type === 'video' && modalMediaStage) {
+      const vid = modalMediaStage.querySelector('video');
+      if (vid) vid.pause();
+    }
+
     currentModalIndex = (currentModalIndex - 1 + cfg.media.length) % cfg.media.length;
+    const nextItem = cfg.media[currentModalIndex];
+
+    if (nextItem && nextItem.type === 'video') {
+      if (isMusicPlaying) {
+        wasMusicPlayingBeforeVideo = true;
+        stopMusic();
+      }
+    } else {
+      if (wasMusicPlayingBeforeVideo) {
+        wasMusicPlayingBeforeVideo = false;
+        startMusic();
+      }
+    }
+
     updateModalContent();
   }
 
@@ -579,7 +679,6 @@
   }
 
   function openNoteModal() {
-    pauseRain();
     displayRandomNote();
 
     if (noteModal) {
@@ -595,7 +694,6 @@
       noteModal.classList.remove('active');
       noteModal.setAttribute('aria-hidden', 'true');
     }
-    resumeRain();
   }
 
   function displayRandomNote() {
@@ -696,19 +794,45 @@
     // Update UI elements with initial track info
     updateTrackUI();
 
-    // Auto-sound: if user clicks anywhere on the page, start music automatically!
-    if (cfg.autoPlayOnFirstClick) {
-      const handleFirstInteraction = () => {
-        if (!isMusicPlaying && !hasAutoStarted) {
-          hasAutoStarted = true;
-          startMusic();
+    // AUTOMATIC PLAY ON OPEN:
+    // Attempt playback immediately when the site opens
+    const tryAutoPlayImmediately = () => {
+      if (audioPlayer && audioPlayer.src) {
+        const playPromise = audioPlayer.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            isMusicPlaying = true;
+            hasAutoStarted = true;
+            updateTrackUI();
+          }).catch((err) => {
+            console.log("Browser policy held immediate audio, waiting for user gesture:", err);
+            // If the browser held automatic audio on initial page load, arm high-priority listeners
+            // for any user interaction (click, touch, pointer, scroll, key) to start immediately
+            const triggerAutoplayOnGesture = (e) => {
+              const isVideoTarget = e && e.target && e.target.closest && (
+                e.target.closest('[data-type="video"]') || 
+                e.target.closest('video')
+              );
+              if (isVideoTarget) {
+                hasAutoStarted = true;
+                wasMusicPlayingBeforeVideo = true;
+              } else if (!isMusicPlaying) {
+                startMusic();
+              }
+              ['click', 'touchstart', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+                window.removeEventListener(evt, triggerAutoplayOnGesture, { capture: true });
+              });
+            };
+
+            ['click', 'touchstart', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+              window.addEventListener(evt, triggerAutoplayOnGesture, { capture: true, once: true });
+            });
+          });
         }
-        document.removeEventListener('click', handleFirstInteraction);
-        document.removeEventListener('touchstart', handleFirstInteraction);
-      };
-      document.addEventListener('click', handleFirstInteraction, { once: true });
-      document.addEventListener('touchstart', handleFirstInteraction, { once: true });
-    }
+      }
+    };
+
+    tryAutoPlayImmediately();
   }
 
   function formatTime(sec) {
@@ -718,9 +842,21 @@
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  const SVG_ICONS = {
+    play: `<svg class="ui-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>`,
+    pause: `<svg class="ui-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+  };
+
+  function updatePlaylistCount() {
+    if (bannerTrackCount) {
+      bannerTrackCount.textContent = `${playlist.length} Songs`;
+    }
+  }
+
   function renderPlaylistCards() {
     if (!playlistTracksContainer) return;
     playlistTracksContainer.innerHTML = '';
+    updatePlaylistCount();
 
     playlist.forEach((track, index) => {
       const card = document.createElement('div');
@@ -734,7 +870,7 @@
         <div class="track-thumb-wrapper">
           <img src="${track.cover}" alt="${track.title} cover" class="track-thumb-img" loading="lazy">
           <div class="track-play-overlay">
-            <span class="track-play-icon">${(index === currentTrackIndex && isMusicPlaying) ? '⏸' : '▶'}</span>
+            <span class="track-play-icon">${(index === currentTrackIndex && isMusicPlaying) ? SVG_ICONS.pause : SVG_ICONS.play}</span>
           </div>
         </div>
         <div class="track-info">
@@ -904,9 +1040,9 @@
       bannerStatusPill.style.color = isMusicPlaying ? "var(--accent-gold)" : "var(--text-muted)";
     }
 
-    // Modal Play/Pause button icon
+    // Modal Play/Pause button icon with clean SVG
     if (ctrlPlayPauseBtn) {
-      ctrlPlayPauseBtn.textContent = isMusicPlaying ? "⏸" : "▶";
+      ctrlPlayPauseBtn.innerHTML = isMusicPlaying ? SVG_ICONS.pause : SVG_ICONS.play;
       ctrlPlayPauseBtn.setAttribute('aria-label', isMusicPlaying ? "Pause music" : "Play music");
     }
 
@@ -919,14 +1055,14 @@
           card.classList.add('is-active');
           if (isMusicPlaying) {
             card.classList.add('is-playing-now');
-            if (playIcon) playIcon.textContent = '⏸';
+            if (playIcon) playIcon.innerHTML = SVG_ICONS.pause;
           } else {
             card.classList.remove('is-playing-now');
-            if (playIcon) playIcon.textContent = '▶';
+            if (playIcon) playIcon.innerHTML = SVG_ICONS.play;
           }
         } else {
           card.classList.remove('is-active', 'is-playing-now');
-          if (playIcon) playIcon.textContent = '▶';
+          if (playIcon) playIcon.innerHTML = SVG_ICONS.play;
         }
       });
     }
@@ -936,6 +1072,9 @@
     if (playlistModal) {
       playlistModal.classList.add('active');
       playlistModal.setAttribute('aria-hidden', 'false');
+      if (musicPlaylistTriggerBtn) {
+        musicPlaylistTriggerBtn.classList.add('is-active');
+      }
       if (playlistCloseBtn) playlistCloseBtn.focus();
     }
   }
@@ -944,6 +1083,17 @@
     if (playlistModal) {
       playlistModal.classList.remove('active');
       playlistModal.setAttribute('aria-hidden', 'true');
+      if (musicPlaylistTriggerBtn) {
+        musicPlaylistTriggerBtn.classList.remove('is-active');
+      }
+    }
+  }
+
+  function togglePlaylistModal() {
+    if (playlistModal && playlistModal.classList.contains('active')) {
+      closePlaylistModal();
+    } else {
+      openPlaylistModal();
     }
   }
 
@@ -1031,16 +1181,89 @@
 
     // Music Playlist Trigger Button & Close
     if (musicPlaylistTriggerBtn) {
-      musicPlaylistTriggerBtn.addEventListener('click', openPlaylistModal);
+      musicPlaylistTriggerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlaylistModal();
+      });
     }
     if (playlistCloseBtn) {
-      playlistCloseBtn.addEventListener('click', closePlaylistModal);
+      playlistCloseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closePlaylistModal();
+      });
     }
     if (playlistModal) {
       playlistModal.addEventListener('click', (e) => {
         if (e.target === playlistModal) {
           closePlaylistModal();
         }
+      });
+    }
+
+    // Close playlist on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && playlistModal && playlistModal.classList.contains('active')) {
+        closePlaylistModal();
+      }
+    });
+
+    // Realtime Music Upload Button & File Input
+    if (uploadMusicBtn && musicUploadInput) {
+      uploadMusicBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        musicUploadInput.click();
+      });
+
+      musicUploadInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        try {
+          const fileUrl = URL.createObjectURL(file);
+          const rawName = file.name.replace(/\.[^/.]+$/, "");
+          let trackTitle = rawName;
+          let trackArtist = "Uploaded Song";
+
+          if (rawName.includes(" - ")) {
+            const parts = rawName.split(" - ");
+            trackArtist = parts[0].trim();
+            trackTitle = parts.slice(1).join(" - ").trim();
+          }
+
+          // Cycle through romantic photo collection for artwork
+          const covers = [
+            'assets/images/image1.jpg',
+            'assets/images/image2.jpg',
+            'assets/images/image3.jpg',
+            'assets/images/image4.jpg',
+            'assets/images/image5.jpg',
+            'assets/images/image6.jpg'
+          ];
+          const assignedCover = covers[playlist.length % covers.length];
+
+          const newTrack = {
+            id: `user-track-${Date.now()}`,
+            title: trackTitle,
+            artist: trackArtist,
+            src: fileUrl,
+            cover: assignedCover,
+            isUserUploaded: true
+          };
+
+          // Add to beginning of playlist for immediate priority
+          playlist.unshift(newTrack);
+
+          updatePlaylistCount();
+          renderPlaylistCards();
+
+          // Immediately select and start playing the uploaded song in realtime
+          selectTrack(0, true);
+        } catch (err) {
+          console.error("Error loading uploaded audio:", err);
+        }
+
+        // Reset input to allow selecting the same file again if desired
+        musicUploadInput.value = '';
       });
     }
 
