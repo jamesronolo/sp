@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="An interactive romantic surprise page with falling memory rain, live together counter, and heartfelt notes.">
+  <meta name="theme-color" content="#0a070e">
+  <title>For You — Forever & Always 💖</title>
+
+  <!-- Google Fonts: Editorial Serif, Modern Sans, and Flowing Script -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+
+  <!-- Master Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Ambient Glowing Background Spheres -->
+  <div class="ambient-glow-sphere sphere-1" aria-hidden="true"></div>
+  <div class="ambient-glow-sphere sphere-2" aria-hidden="true"></div>
+
+  <!-- Falling Media Rain Container (Click any memory to freeze & preview) -->
+  <div id="rain-container" aria-label="Falling memory rain" role="region"></div>
+
+  <!-- Top Controls & Navigation Bar -->
+  <header class="top-bar">
+    <a href="#" class="brand-logo" aria-label="Home">
+      <span>For You</span>
+      <span class="brand-heart">💖</span>
+    </a>
+
+    <div class="top-actions">
+      <!-- Rain Freeze / Resume Toggle -->
+      <button id="rain-toggle-btn" class="glass-pill-btn" aria-label="Toggle falling rain">
+        <span>🌧️</span>
+        <span id="rain-toggle-text">Freeze Rain</span>
+      </button>
+
+      <!-- Music Player & Playlist Control Group -->
+      <div class="music-pill-group">
+        <!-- Quick Play / Pause Button -->
+        <button id="music-toggle-btn" class="glass-pill-btn music-toggle" aria-label="Toggle background music">
+          <span class="music-note-icon">🎵</span>
+          <span class="music-toggle-text">Music: Off</span>
+          <span class="music-visualizer" aria-hidden="true">
+            <span class="visualizer-bar"></span>
+            <span class="visualizer-bar"></span>
+            <span class="visualizer-bar"></span>
+          </span>
+        </button>
+
+        <!-- Playlist Selector Trigger Button -->
+        <button id="music-playlist-trigger-btn" class="glass-pill-btn playlist-trigger-btn" aria-label="Open romantic playlist selector" title="Choose from 6 romantic songs">
+          <span class="top-bar-cover-wrap">
+            <img src="assets/images/image1.jpg" alt="Track Cover" id="top-bar-cover-img" class="top-bar-cover-img">
+          </span>
+          <span class="playlist-btn-text" id="top-bar-track-title">Choose Song</span>
+          <span class="playlist-chevron" aria-hidden="true">▾</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Hero Section -->
+  <main>
+    <section class="hero-section" id="hero-section">
+      <div class="hero-glass-card">
+        <div class="hero-badge">
+          <span>✨</span>
+          <span>A Special Gift Just For You</span>
+          <span>✨</span>
+        </div>
+
+        <h1 class="hero-title">
+          Forever & Always
+          <span class="hero-partner-name" id="partner-name-display">My Love</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Falling deeper in love with you with every breath, every second, and every memory we share together.
+        </p>
+
+        <!-- Live "Together Since" Counter -->
+        <div class="counter-wrapper" aria-label="Time spent together">
+          <div class="counter-heading">
+            <span>⏳</span>
+            <span>Cherishing Every Second Together</span>
+            <span>⏳</span>
+          </div>
+
+          <div class="counter-grid">
+            <div class="counter-box">
+              <span class="counter-number" id="count-days">0</span>
+              <span class="counter-label">Days</span>
+            </div>
+            <div class="counter-box">
+              <span class="counter-number" id="count-hours">00</span>
+              <span class="counter-label">Hours</span>
+            </div>
+            <div class="counter-box">
+              <span class="counter-number" id="count-minutes">00</span>
+              <span class="counter-label">Minutes</span>
+            </div>
+            <div class="counter-box">
+              <span class="counter-number" id="count-seconds">00</span>
+              <span class="counter-label">Seconds</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Call to Action Buttons -->
+        <div class="hero-cta-group">
+          <a href="#gallery-section" class="btn-primary" id="explore-memories-btn">
+            <span>📸</span>
+            <span>Explore Our Memories</span>
+          </a>
+          <button type="button" class="btn-secondary" id="hero-note-btn">
+            <span>💌</span>
+            <span>Read A Love Note</span>
+          </button>
+        </div>
+
+        <a href="#gallery-section" class="scroll-indicator" aria-label="Scroll down to memory gallery">
+          <span>Scroll to memories</span>
+          <span class="scroll-arrow">↓</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Static Memory Gallery Grid Section -->
+    <section class="gallery-section" id="gallery-section">
+      <div class="section-header">
+        <span class="section-tag">Our Keepsakes</span>
+        <h2 class="section-title">Treasured Moments</h2>
+        <p class="section-subtitle">
+          Every photo and video is a frame of pure happiness. Click any memory to enlarge it full-screen.
+        </p>
+
+        <!-- Gallery Filters -->
+        <div class="gallery-filters" role="tablist" aria-label="Media category filters">
+          <button type="button" class="filter-btn active" data-filter="all">All Moments</button>
+          <button type="button" class="filter-btn" data-filter="image">Photos</button>
+          <button type="button" class="filter-btn" data-filter="video">Videos</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Gallery Grid -->
+      <div class="gallery-grid" id="gallery-grid" aria-label="Memory collection"></div>
+    </section>
+  </main>
+
+  <!-- Lightbox Modal for Large Media Preview (Freezes rain while open) -->
+  <div id="media-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Enlarged Memory Preview">
+    <div class="modal-content-card">
+      <button id="modal-close-btn" class="modal-close-btn" aria-label="Close enlarged preview">✕</button>
+
+      <button id="modal-prev-btn" class="modal-nav-btn modal-nav-prev" aria-label="Previous memory">‹</button>
+      <button id="modal-next-btn" class="modal-nav-btn modal-nav-next" aria-label="Next memory">›</button>
+
+      <div id="modal-media-stage" class="modal-media-stage">
+        <!-- Enlarged image or video will be injected here -->
+      </div>
+
+      <div class="modal-caption-bar">
+        <div id="modal-caption" class="modal-caption-text">Cherished Memory</div>
+        <div id="modal-counter" class="modal-counter-badge">1 of 16</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating 💌 Love Notes Button -->
+  <button id="floating-note-btn" class="floating-notes-btn" aria-label="Open a sweet love note">
+    <span class="floating-notes-icon">💌</span>
+    <span class="floating-notes-label">Love Note</span>
+  </button>
+
+  <!-- Love Note Parchment Modal -->
+  <div id="note-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Love Note Letter">
+    <div class="note-modal-card">
+      <div class="note-wax-seal" aria-hidden="true">💌</div>
+      <h3 class="note-greeting" id="note-greeting">For My Love</h3>
+
+      <div class="note-message-box">
+        <p class="note-body-text" id="note-text">"Loading note..."</p>
+      </div>
+
+      <div class="note-card-actions">
+        <button id="note-next-btn" class="note-action-btn note-btn-next">
+          <span>Another Note 💌</span>
+        </button>
+        <button id="note-close-btn" class="note-action-btn note-btn-close">
+          <span>Keep Close</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Romantic Soundtrack Playlist Modal (6-Song Selector with Album Covers) -->
+  <div id="playlist-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Romantic Music Playlist">
+    <div class="playlist-modal-card">
+      <button id="playlist-close-btn" class="modal-close-btn" aria-label="Close playlist">✕</button>
+
+      <div class="playlist-header">
+        <span class="playlist-badge">🎶 Our Soundtrack</span>
+        <h3 class="playlist-title">Choose Our Song</h3>
+        <p class="playlist-subtitle">Pick any song to set the mood, or let our romantic playlist play automatically.</p>
+      </div>
+
+      <!-- Now Playing Feature Disc & Timeline -->
+      <div class="playlist-now-playing-banner" id="now-playing-banner">
+        <div class="now-playing-disc-container">
+          <img src="assets/images/image1.jpg" alt="Now Playing Album Art" id="banner-cover" class="now-playing-disc">
+          <div class="disc-spindle"></div>
+        </div>
+        <div class="now-playing-details">
+          <div class="now-playing-badge-row">
+            <span class="now-playing-pill" id="banner-status-pill">Now Playing</span>
+            <span class="now-playing-sound-hint">✨ Auto-playing soundtrack</span>
+          </div>
+          <h4 class="now-playing-title" id="banner-title">Teka Lang</h4>
+          <p class="now-playing-artist" id="banner-artist">EMMAN</p>
+          
+          <!-- Interactive Timeline & Scrubber -->
+          <div class="now-playing-timeline">
+            <span id="player-time-current" class="timeline-time">0:00</span>
+            <input type="range" id="player-progress-bar" class="timeline-slider" min="0" max="100" value="0" step="0.1" aria-label="Song progress scrubber">
+            <span id="player-time-duration" class="timeline-time">0:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playback Controls Bar -->
+      <div class="playlist-controls-row">
+        <button id="ctrl-prev-btn" class="playlist-ctrl-btn" aria-label="Previous song" title="Previous song">⏮</button>
+        <button id="ctrl-play-pause-btn" class="playlist-ctrl-btn ctrl-play-main" aria-label="Play or pause" title="Play or pause">▶</button>
+        <button id="ctrl-next-btn" class="playlist-ctrl-btn" aria-label="Next song" title="Next song">⏭</button>
+        
+        <div class="volume-slider-group" title="Adjust volume">
+          <span class="volume-icon">🔊</span>
+          <input type="range" id="player-volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="0.65" aria-label="Volume slider">
+        </div>
+      </div>
+
+      <!-- 6 Songs Grid -->
+      <div class="playlist-tracks-grid" id="playlist-tracks-container" role="list" aria-label="Available Songs">
+        <!-- 6 Song cards injected dynamically from CONFIG.playlist -->
+      </div>
+
+      <div class="playlist-footer-hint">
+        <span>💕 Music will keep playing seamlessly even if you don't choose a song</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p class="footer-love-msg">Made with endless love, forever and always 💛</p>
+    <p class="footer-copy">Press Escape to close any memory view. Tap any falling photo to pause the moment.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

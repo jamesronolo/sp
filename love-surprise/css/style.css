@@ -1,0 +1,1666 @@
+/* ==========================================================================
+   "FOR YOU" INTERACTIVE SURPRISE PAGE — MASTER STYLESHEET
+   Aesthetics: Luxury Romantic Glassmorphism, Midnight Rose, Warm Champagne
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS VARIABLES & DESIGN TOKENS
+   -------------------------------------------------------------------------- */
+:root {
+  --bg-deep: #0a070e;
+  --bg-dark: #120c18;
+  --bg-card: rgba(24, 16, 32, 0.72);
+  --bg-card-hover: rgba(35, 22, 48, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.14);
+  --border-glass-glow: rgba(255, 143, 163, 0.4);
+
+  --accent-rose: #ff758f;
+  --accent-rose-bright: #ff4d6d;
+  --accent-rose-soft: #ffccd5;
+  --accent-gold: #f4c27f;
+  --accent-wine: #590d22;
+
+  --text-main: #fbf7f8;
+  --text-muted: #c8b9cb;
+  --text-faint: #89788d;
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-script: 'Great Vibes', cursive, 'Playfair Display', serif;
+
+  --shadow-subtle: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-glow: 0 0 25px rgba(255, 117, 143, 0.35);
+  --shadow-card: 0 15px 35px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --------------------------------------------------------------------------
+   2. GLOBAL RESETS & BASE STYLES
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-deep);
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(138, 28, 64, 0.22) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(100, 20, 50, 0.2) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(26, 15, 36, 0.8) 0%, var(--bg-deep) 100%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+/* Accessibility focus outline */
+:focus-visible {
+  outline: 2px solid var(--accent-rose);
+  outline-offset: 3px;
+}
+
+img, video {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   3. BACKGROUND AMBIENT PARTICLES & GLOW
+   -------------------------------------------------------------------------- */
+.ambient-glow-sphere {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+}
+
+.sphere-1 {
+  width: 450px;
+  height: 450px;
+  top: -100px;
+  left: 20%;
+  background: radial-gradient(circle, var(--accent-rose) 0%, transparent 70%);
+  animation: floatOrb 18s ease-in-out infinite alternate;
+}
+
+.sphere-2 {
+  width: 380px;
+  height: 380px;
+  bottom: 5%;
+  right: 10%;
+  background: radial-gradient(circle, var(--accent-gold) 0%, transparent 70%);
+  animation: floatOrb 22s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+  100% { transform: translate(-30px, 50px) scale(0.95); }
+}
+
+/* --------------------------------------------------------------------------
+   4. FALLING MEDIA RAIN SYSTEM
+   -------------------------------------------------------------------------- */
+#rain-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none; /* Allows scrolling & interacting with content underneath */
+  z-index: 5;
+  overflow: hidden;
+}
+
+/* When the rain is paused (e.g. modal open), all animations freeze in place! */
+#rain-container.paused .falling-card {
+  animation-play-state: paused !important;
+}
+
+/* The individual falling memory item */
+.falling-card {
+  position: absolute;
+  top: 0;
+  pointer-events: auto; /* Clickable! */
+  cursor: pointer;
+  will-change: transform;
+  transform: translateY(-260px);
+  opacity: 0;
+  animation-name: fallDown;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+  user-select: none;
+  touch-action: manipulation;
+  transition: filter var(--transition-fast);
+}
+
+.falling-card:hover {
+  filter: brightness(1.12);
+  z-index: 99 !important;
+}
+
+/* Polaroid / Framed Card interior */
+.falling-inner {
+  position: relative;
+  width: var(--card-w, 140px);
+  padding: 8px;
+  padding-bottom: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 15px rgba(255, 117, 143, 0.25);
+  transform: rotate(var(--rot, 0deg));
+  transition: transform var(--transition-bounce), box-shadow var(--transition-fast);
+}
+
+.falling-card:hover .falling-inner {
+  transform: rotate(0deg) scale(1.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 117, 143, 0.5);
+}
+
+/* Card Pin / Heart decoration */
+.falling-pin {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: var(--accent-rose-bright);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.falling-media-wrapper {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #1a1520;
+  position: relative;
+}
+
+.falling-media-wrapper img,
+.falling-media-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Video badge indicator */
+.video-indicator {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border-radius: var(--radius-full);
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  backdrop-filter: blur(4px);
+}
+
+/* Fallback placeholder card */
+.heart-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffe5ec, #ffccd5);
+  color: var(--accent-rose-bright);
+  font-size: 26px;
+}
+
+.falling-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  right: 8px;
+  font-size: 9px;
+  font-family: var(--font-sans);
+  color: #555;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Keyframes for smooth falling rain */
+@keyframes fallDown {
+  0% {
+    transform: translateY(-260px) rotate(var(--rot-start, -6deg));
+    opacity: 0;
+  }
+  3% {
+    opacity: 0.98;
+  }
+  96% {
+    opacity: 0.98;
+  }
+  100% {
+    transform: translateY(calc(100vh + 300px)) rotate(var(--rot-end, 6deg));
+    opacity: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. NAVIGATION & TOP CONTROLS
+   -------------------------------------------------------------------------- */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  z-index: 50;
+  background: linear-gradient(180deg, rgba(10, 7, 14, 0.55) 0%, rgba(10, 7, 14, 0) 100%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none; /* Let falling memories be interactive even in header whitespace */
+}
+
+.top-bar > * {
+  pointer-events: auto; /* Buttons and controls remain 100% clickable */
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-rose-soft);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+
+.brand-heart {
+  color: var(--accent-rose);
+  animation: pulseHeart 1.8s infinite;
+  display: inline-block;
+}
+
+@keyframes pulseHeart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.22); }
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.glass-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-full);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  font-weight: 500;
+  backdrop-filter: blur(12px);
+  transition: all var(--transition-normal);
+}
+
+.glass-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--accent-rose);
+  box-shadow: 0 0 15px rgba(255, 117, 143, 0.3);
+  transform: translateY(-2px);
+}
+
+.music-toggle.is-playing {
+  border-color: var(--accent-rose);
+  color: var(--accent-rose-soft);
+  box-shadow: 0 0 15px rgba(255, 117, 143, 0.35);
+}
+
+.music-visualizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  margin-left: 2px;
+}
+
+.visualizer-bar {
+  width: 2px;
+  background: var(--accent-rose);
+  border-radius: 1px;
+  height: 3px;
+  transition: height 0.2s ease;
+}
+
+.music-toggle.is-playing .visualizer-bar:nth-child(1) { animation: soundBar 0.8s infinite alternate 0.1s; }
+.music-toggle.is-playing .visualizer-bar:nth-child(2) { animation: soundBar 0.8s infinite alternate 0.3s; }
+.music-toggle.is-playing .visualizer-bar:nth-child(3) { animation: soundBar 0.8s infinite alternate 0.5s; }
+
+@keyframes soundBar {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+/* --------------------------------------------------------------------------
+   6. HERO SECTION
+   -------------------------------------------------------------------------- */
+.hero-section {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 6rem 1.5rem 3rem;
+  text-align: center;
+}
+
+.hero-glass-card {
+  max-width: 780px;
+  width: 100%;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 3.5rem 2.5rem;
+  box-shadow: var(--shadow-card), 0 0 40px rgba(255, 117, 143, 0.15);
+  position: relative;
+  overflow: hidden;
+  animation: cardFadeUp 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+@keyframes cardFadeUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: rgba(255, 117, 143, 0.12);
+  border: 1px solid rgba(255, 117, 143, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: var(--accent-rose-soft);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 1.5rem;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+  color: #fff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.hero-partner-name {
+  font-family: var(--font-script);
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  font-weight: 400;
+  color: var(--accent-rose);
+  display: block;
+  margin-top: 0.2rem;
+  line-height: 1.1;
+  text-shadow: 0 0 25px rgba(255, 117, 143, 0.6);
+}
+
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  max-width: 580px;
+  margin: 1.2rem auto 2.2rem;
+  font-weight: 300;
+}
+
+/* --------------------------------------------------------------------------
+   7. LIVE "TOGETHER SINCE" COUNTER
+   -------------------------------------------------------------------------- */
+.counter-wrapper {
+  margin: 2rem 0 2.5rem;
+}
+
+.counter-heading {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent-gold);
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.counter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.counter-box {
+  background: rgba(14, 9, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 0.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.counter-box:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-glass-glow);
+}
+
+.counter-box::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-rose), var(--accent-gold));
+  opacity: 0.7;
+}
+
+.counter-number {
+  font-family: var(--font-sans);
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  display: block;
+}
+
+.counter-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-faint);
+  margin-top: 6px;
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   8. HERO ACTION BUTTONS
+   -------------------------------------------------------------------------- */
+.hero-cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--accent-rose-bright), #c9184a);
+  border-radius: var(--radius-full);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 8px 25px rgba(255, 77, 109, 0.45);
+  transition: all var(--transition-normal);
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(255, 77, 109, 0.6);
+  background: linear-gradient(135deg, #ff758f, #e63946);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-full);
+  color: var(--text-main);
+  font-weight: 500;
+  font-size: 0.95rem;
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-normal);
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent-gold);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(244, 194, 127, 0.25);
+}
+
+.scroll-indicator {
+  margin-top: 2.5rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.scroll-indicator:hover {
+  color: var(--accent-rose-soft);
+}
+
+.scroll-arrow {
+  animation: bounceDown 2s infinite;
+}
+
+@keyframes bounceDown {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(6px); }
+  60% { transform: translateY(3px); }
+}
+
+/* --------------------------------------------------------------------------
+   9. STATIC GALLERY SECTION
+   -------------------------------------------------------------------------- */
+.gallery-section {
+  position: relative;
+  z-index: 10;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 5rem 1.5rem 8rem;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.section-tag {
+  font-size: 0.825rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent-rose);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.8rem;
+}
+
+.section-subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+  max-width: 500px;
+  margin: 0 auto 1.8rem;
+}
+
+/* Filter buttons */
+.gallery-filters {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 2.5rem;
+}
+
+.filter-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.filter-btn.active {
+  background: var(--accent-rose);
+  border-color: var(--accent-rose);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(255, 117, 143, 0.4);
+}
+
+/* Gallery Grid */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.gallery-item {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-subtle);
+  cursor: pointer;
+  transition: transform var(--transition-bounce), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.gallery-item:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-card), 0 0 25px rgba(255, 117, 143, 0.3);
+  border-color: var(--accent-rose);
+}
+
+.gallery-media-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  position: relative;
+  background: #140d1a;
+}
+
+.gallery-media-thumb img,
+.gallery-media-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.gallery-item:hover .gallery-media-thumb img,
+.gallery-item:hover .gallery-media-thumb video {
+  transform: scale(1.08);
+}
+
+.gallery-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(18, 12, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  color: #fff;
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gallery-info {
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(24, 16, 32, 0.8) 0%, rgba(18, 12, 24, 0.95) 100%);
+}
+
+.gallery-caption {
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gallery-meta {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gallery-action-hint {
+  color: var(--accent-rose);
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all var(--transition-fast);
+}
+
+.gallery-item:hover .gallery-action-hint {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* --------------------------------------------------------------------------
+   10. LIGHTBOX / PREVIEW MODAL (FREEZES RAIN WHILE OPEN)
+   -------------------------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 5, 12, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content-card {
+  position: relative;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 50px rgba(255, 117, 143, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.92);
+  transition: transform var(--transition-bounce);
+}
+
+.modal-overlay.active .modal-content-card {
+  transform: scale(1);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(18, 12, 24, 0.85);
+  border: 1px solid var(--border-glass);
+  color: #fff;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+}
+
+.modal-close-btn:hover {
+  background: var(--accent-rose);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 117, 143, 0.6);
+}
+
+.modal-media-stage {
+  position: relative;
+  width: 100%;
+  max-height: 65vh;
+  background: #08050a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.modal-media-stage img,
+.modal-media-stage video {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+  display: block;
+}
+
+.modal-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(18, 12, 24, 0.7);
+  border: 1px solid var(--border-glass);
+  color: #fff;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all var(--transition-fast);
+  z-index: 10;
+}
+
+.modal-nav-btn:hover {
+  background: rgba(255, 117, 143, 0.9);
+  color: #fff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.modal-nav-prev { left: 16px; }
+.modal-nav-next { right: 16px; }
+
+.modal-caption-bar {
+  padding: 18px 24px;
+  background: rgba(18, 12, 24, 0.95);
+  border-top: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal-caption-text {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--text-main);
+  font-style: italic;
+}
+
+.modal-counter-badge {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   11. FLOATING 💌 LOVE NOTES BUTTON & LETTER MODAL
+   -------------------------------------------------------------------------- */
+.floating-notes-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #ff4d6d, #c9184a);
+  border-radius: var(--radius-full);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 8px 30px rgba(255, 77, 109, 0.5), 0 0 20px rgba(255, 117, 143, 0.3);
+  transition: all var(--transition-bounce);
+  animation: floatButton 4s ease-in-out infinite;
+}
+
+@keyframes floatButton {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.floating-notes-btn:hover {
+  transform: translateY(-8px) scale(1.06);
+  box-shadow: 0 14px 35px rgba(255, 77, 109, 0.7);
+}
+
+.floating-notes-icon {
+  font-size: 1.3rem;
+  animation: wiggleEnvelope 3s infinite ease-in-out;
+}
+
+@keyframes wiggleEnvelope {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-10deg); }
+  25% { transform: rotate(10deg); }
+  35% { transform: rotate(-5deg); }
+  45% { transform: rotate(0deg); }
+}
+
+/* Love Note Modal Dialog */
+.note-modal-card {
+  max-width: 520px;
+  width: 100%;
+  background: linear-gradient(145deg, #fffaf5 0%, #fff0f3 100%);
+  color: #2b1820;
+  border-radius: var(--radius-lg);
+  padding: 2.8rem 2.2rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 117, 143, 0.4);
+  position: relative;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform var(--transition-bounce);
+  border: 1px solid rgba(255, 182, 193, 0.6);
+}
+
+.modal-overlay.active .note-modal-card {
+  transform: scale(1);
+}
+
+.note-wax-seal {
+  width: 60px;
+  height: 60px;
+  margin: -4.5rem auto 1.2rem;
+  background: linear-gradient(135deg, #c9184a, #800f2f);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #ffd166;
+  box-shadow: 0 8px 20px rgba(128, 15, 47, 0.5);
+  border: 3px solid #ff758f;
+}
+
+.note-greeting {
+  font-family: var(--font-script);
+  font-size: 2.4rem;
+  color: #a4133c;
+  margin-bottom: 0.8rem;
+  line-height: 1.2;
+}
+
+.note-message-box {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0 1.8rem;
+}
+
+.note-body-text {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  line-height: 1.7;
+  color: #3d2430;
+  font-style: italic;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.note-card-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.note-action-btn {
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.note-btn-next {
+  background: #a4133c;
+  color: #fff;
+}
+
+.note-btn-next:hover {
+  background: #c9184a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(164, 19, 60, 0.35);
+}
+
+.note-btn-close {
+  background: rgba(0, 0, 0, 0.08);
+  color: #553344;
+}
+
+.note-btn-close:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   12. HEART BURST CONFETTI
+   -------------------------------------------------------------------------- */
+.heart-burst {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1200;
+  font-size: 20px;
+  animation: burstFloat 1s forwards ease-out;
+}
+
+@keyframes burstFloat {
+  0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(1.4); opacity: 0; }
+}
+
+/* --------------------------------------------------------------------------
+   13. FOOTER
+   -------------------------------------------------------------------------- */
+.site-footer {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 3rem 1.5rem 5rem;
+  border-top: 1px solid var(--border-glass);
+  background: rgba(10, 7, 14, 0.85);
+  backdrop-filter: blur(10px);
+}
+
+.footer-love-msg {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--accent-rose-soft);
+  margin-bottom: 0.5rem;
+}
+
+.footer-copy {
+  font-size: 0.825rem;
+  color: var(--text-faint);
+}
+
+/* --------------------------------------------------------------------------
+   14. ACCESSIBILITY & RESPONSIVE DESIGN
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .falling-card {
+    animation: none !important;
+    position: static !important;
+    display: none !important;
+  }
+  
+  .ambient-glow-sphere,
+  .brand-heart,
+  .floating-notes-btn {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    padding: 0 1rem;
+    height: 60px;
+  }
+  
+  .hero-glass-card {
+    padding: 2.2rem 1.4rem;
+  }
+
+  .counter-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .counter-box {
+    padding: 0.9rem 0.5rem;
+  }
+
+  .falling-inner {
+    --card-w: 105px;
+    padding: 6px;
+    padding-bottom: 18px;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+
+  .floating-notes-btn {
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+  }
+
+  .floating-notes-label {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.9rem;
+  }
+  
+  .hero-partner-name {
+    font-size: 2.3rem;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   ROMANTIC SOUNDTRACK PLAYLIST & MUSIC SELECTOR STYLES
+   ========================================================================== */
+.music-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.playlist-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+}
+
+.top-bar-cover-wrap {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--accent-rose);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-deep);
+}
+
+.top-bar-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.music-toggle.is-playing ~ .playlist-trigger-btn .top-bar-cover-img,
+.is-playing .top-bar-cover-img {
+  animation: spinDisc 8s linear infinite;
+}
+
+.playlist-btn-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-chevron {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: transform var(--transition-fast);
+}
+
+.playlist-trigger-btn:hover .playlist-chevron {
+  transform: translateY(2px);
+  opacity: 1;
+}
+
+/* Playlist Modal Card */
+.playlist-modal-card {
+  max-width: 620px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(20, 12, 28, 0.94);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 117, 143, 0.32);
+  border-radius: var(--radius-lg);
+  padding: 2.2rem 1.8rem;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.75), 0 0 45px rgba(255, 117, 143, 0.28);
+  position: relative;
+  transform: scale(0.92);
+  transition: transform var(--transition-normal);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-rose) transparent;
+}
+
+.playlist-modal-card::-webkit-scrollbar {
+  width: 6px;
+}
+.playlist-modal-card::-webkit-scrollbar-thumb {
+  background: rgba(255, 117, 143, 0.4);
+  border-radius: 4px;
+}
+
+.modal-overlay.active .playlist-modal-card {
+  transform: scale(1);
+}
+
+.playlist-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.playlist-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  background: rgba(255, 117, 143, 0.12);
+  border: 1px solid rgba(255, 117, 143, 0.25);
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-rose-soft);
+  margin-bottom: 0.6rem;
+}
+
+.playlist-title {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  color: var(--text-main);
+  margin-bottom: 0.3rem;
+  background: linear-gradient(135deg, #ffffff 40%, var(--accent-rose-soft) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.playlist-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* Now Playing Banner with Vinyl Disc */
+.playlist-now-playing-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.now-playing-disc-container {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 117, 143, 0.3);
+  border: 2px solid rgba(255, 117, 143, 0.5);
+  overflow: hidden;
+  background: #111;
+}
+
+.now-playing-disc {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.now-playing-disc.is-spinning {
+  animation: spinDisc 9s linear infinite;
+}
+
+.disc-spindle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #fff 0%, #333 100%);
+  border-radius: 50%;
+  border: 2px solid var(--accent-rose);
+  z-index: 2;
+}
+
+@keyframes spinDisc {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.now-playing-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.now-playing-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.now-playing-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  letter-spacing: 0.5px;
+}
+
+.now-playing-sound-hint {
+  font-size: 0.75rem;
+  color: var(--accent-rose-soft);
+  opacity: 0.85;
+}
+
+.now-playing-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-playing-artist {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+/* Timeline & Scrubber */
+.now-playing-timeline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-time {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+}
+
+.timeline-slider, .volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.timeline-slider::-webkit-slider-thumb, .volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent-rose);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255, 117, 143, 0.8);
+  transition: transform var(--transition-fast);
+}
+
+.timeline-slider::-webkit-slider-thumb:hover, .volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
+
+/* Controls Row */
+.playlist-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 0;
+}
+
+.playlist-ctrl-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-main);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transition-fast);
+}
+
+.playlist-ctrl-btn:hover {
+  background: rgba(255, 117, 143, 0.2);
+  border-color: var(--accent-rose);
+  transform: scale(1.1);
+  color: #fff;
+}
+
+.ctrl-play-main {
+  width: 52px;
+  height: 52px;
+  font-size: 1.35rem;
+  background: linear-gradient(135deg, var(--accent-rose), var(--accent-wine));
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 18px rgba(255, 117, 143, 0.4);
+}
+
+.ctrl-play-main:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 24px rgba(255, 117, 143, 0.6);
+}
+
+.volume-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 0.8rem;
+  max-width: 110px;
+}
+
+.volume-icon {
+  font-size: 0.88rem;
+}
+
+/* 6 Songs Grid */
+.playlist-tracks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 1.2rem;
+}
+
+@media (max-width: 540px) {
+  .playlist-tracks-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.track-item-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-align: left;
+  width: 100%;
+}
+
+.track-item-card:hover {
+  background: rgba(255, 117, 143, 0.1);
+  border-color: rgba(255, 117, 143, 0.35);
+  transform: translateY(-2px);
+}
+
+.track-item-card.is-active {
+  background: rgba(255, 117, 143, 0.18);
+  border-color: var(--accent-rose);
+  box-shadow: 0 0 16px rgba(255, 117, 143, 0.3);
+}
+
+.track-thumb-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.track-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-fast);
+}
+
+.track-item-card:hover .track-thumb-img {
+  transform: scale(1.08);
+}
+
+.track-play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: #fff;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.track-item-card:hover .track-play-overlay,
+.track-item-card.is-active .track-play-overlay {
+  opacity: 1;
+}
+
+.track-item-card.is-active.is-playing-now .track-play-overlay {
+  background: rgba(138, 28, 64, 0.65);
+}
+
+.track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.track-item-card.is-active .track-title {
+  color: var(--accent-rose-soft);
+}
+
+.track-artist {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-equalizer-badge {
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  margin-right: 4px;
+}
+
+.track-item-card.is-active.is-playing-now .track-equalizer-badge {
+  display: inline-flex;
+}
+
+.track-equalizer-badge span {
+  width: 2px;
+  background: var(--accent-rose);
+  border-radius: 1px;
+  height: 4px;
+}
+
+.track-item-card.is-active.is-playing-now .track-equalizer-badge span:nth-child(1) {
+  animation: soundBar 0.6s infinite alternate 0.1s;
+}
+.track-item-card.is-active.is-playing-now .track-equalizer-badge span:nth-child(2) {
+  animation: soundBar 0.6s infinite alternate 0.3s;
+}
+.track-item-card.is-active.is-playing-now .track-equalizer-badge span:nth-child(3) {
+  animation: soundBar 0.6s infinite alternate 0.5s;
+}
+
+.playlist-footer-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  margin-top: 0.8rem;
+}
+
