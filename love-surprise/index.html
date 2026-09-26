@@ -26,6 +26,8 @@
 
   <!-- Falling Media Rain Container (Click any memory to freeze & preview) -->
   <div id="rain-container" aria-label="Falling memory rain" role="region"></div>
+  <!-- Falling Love Emojis Rain (Roses, Hearts & Love Icons) -->
+  <div id="emoji-rain-container" class="emoji-rain-container" aria-hidden="true"></div>
 
   <!-- Top Controls & Navigation Bar -->
   <header class="top-bar">
@@ -160,6 +162,10 @@
           <button type="button" class="filter-btn active" data-filter="all">All Moments</button>
           <button type="button" class="filter-btn" data-filter="image">Photos</button>
           <button type="button" class="filter-btn" data-filter="video">Videos</button>
+          <button type="button" class="filter-btn pbooth-btn" id="open-pbooth-btn" aria-label="Open Photobooth Studio" title="Open Photobooth Studio">
+            <span class="pbooth-btn-icon" aria-hidden="true">📸</span>
+            <span class="pbooth-btn-text">pbooth</span>
+          </button>
         </div>
       </div>
 
@@ -311,11 +317,492 @@
 
 
 
-  <!-- Footer -->
-  <footer class="site-footer"> <p class="footer-love-msg">Made with endless love, forever and always 💛</p>
+  <!-- Photobooth Studio Modal -->
+  <div id="pbooth-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Photobooth Studio">
+    <div class="modal-content-card pbooth-modal-card">
+      <button id="pbooth-close-btn" class="modal-close-btn" aria-label="Close photobooth">✕</button>
 
-    <p class="footer-copy">Press Escape to close any preview. Tap any falling photo to pause the moment.</p>
-  </footer>
+      <!-- Photobooth Header -->
+      <div class="pbooth-header">
+        <div class="pbooth-title-group">
+          <span class="pbooth-badge">✨ Sweet Memories Studio</span>
+          <h2 class="pbooth-title">Romantic Photobooth</h2>
+        </div>
+
+        <!-- Navigation Tabs: Camera Studio vs Snaps History -->
+        <div class="pbooth-tabs" role="tablist">
+          <button type="button" class="pbooth-tab-btn active" id="tab-booth-btn" data-tab="booth">
+            <span>📸 Take Photo</span>
+          </button>
+          <button type="button" class="pbooth-tab-btn" id="tab-history-btn" data-tab="history">
+            <span>🎞️ Snaps History</span>
+            <span class="pbooth-history-count" id="pbooth-history-badge">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Studio / Camera Booth View -->
+      <div class="pbooth-tab-panel active" id="pbooth-panel-booth">
+        
+        <!-- Top Options Bar: Prominent Choose Template Button & Layouts -->
+        <div class="pbooth-toolbar">
+          <!-- Prominent Button to open the 5-Template Showcase Modal -->
+          <div class="pbooth-tool-section pbooth-template-selector-section">
+            <span class="pbooth-tool-label">Frame Template:</span>
+            <button type="button" class="btn-choose-template" id="pbooth-choose-template-btn" title="Click to view and choose from 5 aesthetic reference templates">
+              <span class="btn-template-icon">🎨</span>
+              <span class="btn-template-text">Choose Frame:</span>
+              <span class="btn-template-badge" id="pbooth-active-template-badge">🎀 Polaroid & Snoopy</span>
+              <span class="btn-template-arrow">▾</span>
+            </button>
+          </div>
+
+          <!-- Layout Selection: 3-Shot Strip, 1 Shot, 4-Shot Grid -->
+          <div class="pbooth-tool-section">
+            <span class="pbooth-tool-label">Layout:</span>
+            <div class="pbooth-pill-group" id="pbooth-layout-select">
+              <button type="button" class="pbooth-pill-btn active" data-layout="3">3-Shot Strip</button>
+              <button type="button" class="pbooth-pill-btn" data-layout="1">1 Shot</button>
+              <button type="button" class="pbooth-pill-btn" data-layout="4">4-Shot Grid</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Template Selector Carousel (11 Aesthetic Choices: 5 Reference + Original Templates) -->
+        <div class="pbooth-quick-templates-bar">
+          <div class="pbooth-frames-carousel" id="pbooth-frames-list" role="tablist" aria-label="Template selection">
+            <button type="button" class="pbooth-frame-thumb active" data-frame="snoopy" title="Polaroid OneStep 2 Camera & Snoopy Cupid">
+              <span class="frame-thumb-swatch swatch-snoopy"></span>
+              <span class="frame-thumb-name">🎀 Polaroid & Snoopy</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="retro" title="70s / 90s Retro Pop Checkerboard">
+              <span class="frame-thumb-swatch swatch-retro"></span>
+              <span class="frame-thumb-name">🎱 Retro 70s/90s Pop</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="scrapbook" title="Memory Book Vintage Scrapbook">
+              <span class="frame-thumb-swatch swatch-scrapbook"></span>
+              <span class="frame-thumb-name">📎 Memory Book</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="spiderman" title="Marvel Spider-Man Comic Strip">
+              <span class="frame-thumb-swatch swatch-spiderman"></span>
+              <span class="frame-thumb-name">🕷️ Spider-Man Comic</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="gridticket" title="Pixtab Grid Ticket with Barcode">
+              <span class="frame-thumb-swatch swatch-gridticket"></span>
+              <span class="frame-thumb-name">🎟️ Pixtab Grid Ticket</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="spotify" title="Spotify Music Player Strip">
+              <span class="frame-thumb-swatch swatch-spotify"></span>
+              <span class="frame-thumb-name">🎵 Spotify Strip</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="pixelbooth" title="Pixelbooth Barcode Ticket">
+              <span class="frame-thumb-swatch swatch-pixelbooth"></span>
+              <span class="frame-thumb-name">🎟️ Special Day Ticket</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="pink" title="Sweet Pink Love">
+              <span class="frame-thumb-swatch swatch-pink"></span>
+              <span class="frame-thumb-name">🌸 Sweet Pink</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="film" title="Vintage 35mm Film Strip">
+              <span class="frame-thumb-swatch swatch-film"></span>
+              <span class="frame-thumb-name">🎞️ Vintage Film</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="korean" title="Korean Pastel Dream (인생네컷)">
+              <span class="frame-thumb-swatch swatch-korean"></span>
+              <span class="frame-thumb-name">✨ Korean Pastel</span>
+            </button>
+            <button type="button" class="pbooth-frame-thumb" data-frame="minimal" title="Chic Minimalist Editorial">
+              <span class="frame-thumb-swatch swatch-minimal"></span>
+              <span class="frame-thumb-name">🖤 Minimalist Chic</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Studio Stage -->
+        <div class="pbooth-stage-wrapper">
+          <!-- Viewfinder Screen -->
+          <div class="pbooth-viewfinder" id="pbooth-viewfinder">
+            <video id="pbooth-video" autoplay playsinline webkit-playsinline muted></video>
+            <canvas id="pbooth-work-canvas" style="display: none;"></canvas>
+
+            <!-- Shutter Flash Effect -->
+            <div class="pbooth-flash-overlay" id="pbooth-flash"></div>
+
+            <!-- Visual Shots Progress Tracker (Clean, tiny dot indicators) -->
+            <div class="pbooth-shots-tracker" id="pbooth-shots-tracker" aria-label="Shots taken progress">
+              <div class="tracker-slot active">1</div>
+              <div class="tracker-slot">2</div>
+              <div class="tracker-slot">3</div>
+            </div>
+
+            <!-- Live Updated Day & Date Stamp Pill -->
+            <div class="pbooth-live-stamp" id="pbooth-live-stamp">
+              <span class="stamp-icon">📅</span>
+              <span id="pbooth-stamp-text">--</span>
+            </div>
+
+            <!-- Fallback Screen when camera not active or permission pending -->
+            <div class="pbooth-camera-fallback" id="pbooth-camera-fallback" style="display: none;">
+              <div class="fallback-icon">📸</div>
+              <p class="fallback-text" id="pbooth-fallback-msg">Camera not started or permission needed</p>
+              <div class="fallback-actions">
+                <button type="button" class="btn-primary btn-sm" id="pbooth-start-cam-btn">Allow Camera</button>
+                <button type="button" class="btn-secondary btn-sm" id="pbooth-upload-photo-btn">Upload Photo</button>
+                <input type="file" id="pbooth-file-input" accept="image/*" style="display: none;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Result Preview Stage (Shown when photos are snapped) -->
+          <div class="pbooth-result-stage" id="pbooth-result-stage" style="display: none;">
+            <div class="pbooth-rendered-card" id="pbooth-rendered-card">
+              <img id="pbooth-result-img" alt="Captured Photobooth keepsake" class="pbooth-final-image">
+            </div>
+
+            <div class="pbooth-result-actions">
+              <button type="button" class="btn-primary" id="pbooth-download-btn">
+                <span>⬇️</span>
+                <span>Download Photo</span>
+              </button>
+              <button type="button" class="btn-secondary" id="pbooth-retake-btn">
+                <span>🔄</span>
+                <span>Retake</span>
+              </button>
+              <button type="button" class="btn-secondary" id="pbooth-view-history-shortcut-btn">
+                <span>🎞️</span>
+                <span>View in Snaps</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Controls Bar (Flip button removed; Click whenever ready) -->
+        <div class="pbooth-controls-bar" id="pbooth-controls-bar">
+          <!-- Reset Shots in progress button -->
+          <button type="button" class="pbooth-aux-btn" id="pbooth-reset-shots-btn" title="Reset Shots & Start Over" style="visibility: hidden;">
+            <span class="aux-emoji">🔄</span>
+            <span class="aux-label">Reset</span>
+          </button>
+
+          <!-- Main Manual Shutter Snap Button -->
+          <button type="button" class="pbooth-snap-btn" id="pbooth-snap-btn" aria-label="Take picture" title="Click to take picture whenever you are ready">
+            <span class="snap-btn-ring"></span>
+            <span class="snap-btn-inner">📸</span>
+            <span class="snap-btn-counter" id="pbooth-snap-btn-counter">Shot 1/3</span>
+          </button>
+
+          <!-- Mirror Toggle Button -->
+          <button type="button" class="pbooth-aux-btn active" id="pbooth-mirror-btn" title="Toggle Mirror Selfie Mode">
+            <span class="aux-emoji">🪞</span>
+            <span class="aux-label">Mirror</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Snaps History View -->
+      <div class="pbooth-tab-panel" id="pbooth-panel-history" style="display: none;">
+        <div class="pbooth-history-header">
+          <p class="history-subtitle">
+            All your captured photobooth moments stamped with the day they were taken. Click any photo to view full-size, download, or delete permanently.
+          </p>
+        </div>
+
+        <!-- History Grid -->
+        <div class="pbooth-history-grid" id="pbooth-history-grid" role="list">
+          <!-- Injected via JavaScript from localStorage -->
+        </div>
+
+        <!-- History Empty State -->
+        <div class="pbooth-history-empty" id="pbooth-history-empty" style="display: none;">
+          <span class="empty-icon">🎞️</span>
+          <h3 class="empty-title">No Saved Snaps Yet</h3>
+          <p class="empty-desc">Capture your first sweet photobooth moment today!</p>
+          <button type="button" class="btn-primary btn-sm" id="pbooth-empty-take-btn">Take A Photo Now</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Template Picker Showcase Modal (Opened via "Choose Frame" button) -->
+  <div id="pbooth-templates-modal" class="modal-overlay pbooth-templates-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Choose Photobooth Template">
+    <div class="pbooth-templates-card">
+      <div class="templates-modal-header">
+        <div class="templates-header-title-box">
+          <span class="templates-badge">🎨 11 Aesthetic Choices</span>
+          <h3 class="templates-modal-title">Choose Frame Template</h3>
+          <p class="templates-modal-desc">Pilia ang imong paboritong template sa 11 ka desinyo (5 reference templates + original frames):</p>
+        </div>
+        <button type="button" class="templates-modal-close" id="pbooth-templates-close-btn" aria-label="Close template picker">✕</button>
+      </div>
+
+      <!-- 11 Selectable Template Cards (5 Reference + 6 Original Frames) -->
+      <div class="templates-picker-grid" id="templates-picker-grid">
+        
+        <!-- Card 1: Polaroid Camera & Snoopy Cupid -->
+        <div class="template-choice-card active" data-frame="snoopy" role="button" tabindex="0">
+          <div class="template-card-visual visual-snoopy">
+            <div class="mock-strip">
+              <div class="mock-camera-top">📷</div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-ticket-bottom">🎟️</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🎀 Polaroid & Snoopy</h4>
+              <span class="template-tag tag-cute">Template 1</span>
+            </div>
+            <p class="template-card-desc">Polaroid OneStep2 camera on top with red bow, cherries, Snoopy cupid, apple slice, coffee cups, teddy bear with party hat, and vintage ticket.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 2: 70s / 90s Retro Pop -->
+        <div class="template-choice-card" data-frame="retro" role="button" tabindex="0">
+          <div class="template-card-visual visual-retro">
+            <div class="mock-strip">
+              <div class="mock-retro-header">70s</div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-retro-footer">RETRO</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🎱 Retro 70s/90s Pop</h4>
+              <span class="template-tag tag-vintage">Template 2</span>
+            </div>
+            <p class="template-card-desc">Deep crimson with yellow-orange checkerboard sides, '70s' bubble font, 35mm rangefinder camera, 7-ball, 8-ball, Converse shoe, vinyl record, and RETRO 1990's.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 3: Memory Book Scrapbook -->
+        <div class="template-choice-card" data-frame="scrapbook" role="button" tabindex="0">
+          <div class="template-card-visual visual-scrapbook">
+            <div class="mock-strip">
+              <div class="mock-pin">🧷</div>
+              <div class="mock-photo tilted-1"></div>
+              <div class="mock-photo tilted-2"></div>
+              <div class="mock-photo tilted-3"></div>
+              <div class="mock-flower">🌺</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">📎 Memory Book</h4>
+              <span class="template-tag tag-korean">Template 3</span>
+            </div>
+            <p class="template-card-desc">Vintage scrapbook with colorful 'memory book' letters pinned with a safety pin, 3 angled deckle-edge frames, tropical hibiscus flower, digital camera, and reading cat.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 4: Marvel Spider-Man & Spider-Gwen Comic -->
+        <div class="template-choice-card" data-frame="spiderman" role="button" tabindex="0">
+          <div class="template-card-visual visual-spiderman">
+            <div class="mock-strip">
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-spidey-logo">SPIDER-MAN</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🕷️ Spider-Man Comic</h4>
+              <span class="template-tag tag-popular">Template 4</span>
+            </div>
+            <p class="template-card-desc">Authentic B&W Marvel comic book halftone page, 4 red comic frames, Spider-Gwen hanging & shooting webs, red Marvel badge, and 3D SPIDER-MAN title.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 5: Pixtab Grid Ticket -->
+        <div class="template-choice-card" data-frame="gridticket" role="button" tabindex="0">
+          <div class="template-card-visual visual-gridticket">
+            <div class="mock-strip">
+              <div class="mock-pixtab-header">pixtab</div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-barcode-ticket">|||||| ★★★</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🎟️ Pixtab Grid Ticket</h4>
+              <span class="template-tag tag-ticket">Template 5</span>
+            </div>
+            <p class="template-card-desc">Notebook grid background with vertical 35mm film perforations, pixtab header, rounded terracotta frame, hand-drawn sketch star, tear line, and barcode ticket stub.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 6: Spotify Player Strip -->
+        <div class="template-choice-card" data-frame="spotify" role="button" tabindex="0">
+          <div class="template-card-visual visual-spotify">
+            <div class="mock-strip">
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-widget-spotify">
+                <span class="mock-line"></span>
+              </div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🎵 Spotify Player Strip</h4>
+              <span class="template-tag tag-popular">Music Strip</span>
+            </div>
+            <p class="template-card-desc">Dark aesthetic with iPad music player widget, progress scrubber bar, current song title, and media controls.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 7: Pixelbooth "Special Day" Ticket -->
+        <div class="template-choice-card" data-frame="pixelbooth" role="button" tabindex="0">
+          <div class="template-card-visual visual-pixelbooth">
+            <div class="mock-strip">
+              <div class="mock-barcode-top">||||||||</div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-script-bottom">Special Day</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🎟️ Special Day Ticket</h4>
+              <span class="template-tag tag-ticket">Pixelbooth</span>
+            </div>
+            <p class="template-card-desc">Ticket strip with side punch cutouts, top & bottom barcodes, dashed tear lines, and 'Special Day' calligraphy.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 8: Sweet Pink Love -->
+        <div class="template-choice-card" data-frame="pink" role="button" tabindex="0">
+          <div class="template-card-visual visual-pink">
+            <div class="mock-strip">
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-footer-pink">♡ SWEET MEMORIES ♡</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🌸 Sweet Pink Love</h4>
+              <span class="template-tag tag-pink">Romantic</span>
+            </div>
+            <p class="template-card-desc">Sweet pink pastel background with soft white borders, 'Sweet Memories' header, and romantic dedication.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 9: Vintage 35mm Film -->
+        <div class="template-choice-card" data-frame="film" role="button" tabindex="0">
+          <div class="template-card-visual visual-film">
+            <div class="mock-strip">
+              <div class="mock-sprockets">▪ ▪ ▪</div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-film-stamp">KODAK 400 • '26 09 26</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🎞️ Vintage 35mm Film</h4>
+              <span class="template-tag tag-vintage">Cinematic</span>
+            </div>
+            <p class="template-card-desc">Classic Kodak 400 filmstrip style with authentic side sprocket holes, frame numbers, and warm amber timestamps.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 10: Korean Pastel Dream -->
+        <div class="template-choice-card" data-frame="korean" role="button" tabindex="0">
+          <div class="template-card-visual visual-korean">
+            <div class="mock-strip">
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-korean-sparkles">우리의 순간 ✨</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">✨ Korean Pastel (인생네컷)</h4>
+              <span class="template-tag tag-korean">K-Style</span>
+            </div>
+            <p class="template-card-desc">Dreamy soft lavender & sky-blue gradient, Korean '우리의 순간' aesthetic header, sparkles, and lilac matting.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+        <!-- Card 11: Minimalist Chic Editorial -->
+        <div class="template-choice-card" data-frame="minimal" role="button" tabindex="0">
+          <div class="template-card-visual visual-minimal">
+            <div class="mock-strip">
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-photo"></div>
+              <div class="mock-minimal-stamp">M O M E N T S</div>
+            </div>
+            <span class="template-active-check">✓</span>
+          </div>
+          <div class="template-card-info">
+            <div class="template-card-header">
+              <h4 class="template-card-title">🖤 Minimalist Chic</h4>
+              <span class="template-tag tag-editorial">Editorial</span>
+            </div>
+            <p class="template-card-desc">High-fashion monochrome and warm ivory strip with crisp borders, elegant serif typography, and clean date line.</p>
+            <button type="button" class="btn-select-template">Use This Frame</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal Dialog -->
+  <div id="pbooth-delete-modal" class="modal-overlay pbooth-delete-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="pbooth-delete-card">
+      <div class="delete-icon-circle">🗑️</div>
+      <h3 class="delete-title">Delete Photo Permanently?</h3>
+      <p class="delete-desc">
+        This photobooth memory will be deleted permanently from your saved snaps history and cannot be recovered.
+      </p>
+      <div class="delete-actions">
+        <button type="button" class="btn-delete-confirm" id="pbooth-delete-confirm-btn">Yes, Delete Permanently</button>
+        <button type="button" class="btn-delete-cancel" id="pbooth-delete-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photobooth Toast Notification -->
+  <div id="pbooth-toast" class="pbooth-toast" aria-live="polite" aria-hidden="true">
+    <span class="toast-icon" id="pbooth-toast-icon">✨</span>
+    <span class="toast-msg" id="pbooth-toast-msg">Photo captured!</span>
+  </div>
 
   <!-- Scripts -->
   <script src="js/config.js"></script>

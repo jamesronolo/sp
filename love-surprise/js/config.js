@@ -20,6 +20,16 @@ const CONFIG = {
   rainLanes: 5,
   // rainDuration: Slow, gentle romantic fall speed (in seconds)
   rainDuration: 16,
+
+  // 🌹 FALLING LOVE EMOJIS RAIN SETTINGS
+  // Set to true to enable falling love-themed emojis (roses, hearts, petals)
+  enableFallingEmojis: true,
+  // Emojis that gently shower down alongside the memory photos
+  fallingEmojis: [
+    '🌹', '💖', '🌸', '💕', '🌷', '💓', '💐', '🤍', '🌺', '💘', '💝'
+  ],
+  // Number of simultaneous falling emojis across the screen
+  fallingEmojiCount: 24,
   
   // 🎵 PLAYLIST & MUSIC SETTINGS
   // Set to true to enable music controls and background soundtrack
