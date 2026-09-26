@@ -17,8 +17,98 @@
 
   <!-- Master Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/puzzle.css">
+
+  <!-- Flow Controller: Fresh open/click starts with Puzzle; Page refresh stays on website -->
+  <script>
+    (function() {
+      var isRefresh = false;
+      try {
+        var nav = performance.getEntriesByType('navigation')[0];
+        if (nav) {
+          isRefresh = (nav.type === 'reload');
+        } else if (window.performance && window.performance.navigation) {
+          isRefresh = (window.performance.navigation.type === 1);
+        }
+      } catch (e) {}
+
+      // Fresh open (clicking link, new tab, opening in Live Server) -> reset to show Puzzle
+      if (!isRefresh) {
+        sessionStorage.removeItem('love_surprise_puzzle_unlocked');
+        localStorage.removeItem('love_surprise_puzzle_unlocked');
+      }
+
+      // If page was refreshed AND already unlocked, keep website open without flashing puzzle
+      if (sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
+          (isRefresh && localStorage.getItem('love_surprise_puzzle_unlocked') === 'true')) {
+        document.documentElement.classList.add('puzzle-already-unlocked');
+      }
+    })();
+  </script>
 </head>
 <body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       PUZZLE INTRO GATE — solve to unlock the site
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div id="puzzle-overlay" role="main" aria-label="Puzzle intro">
+    <!-- Ambient blobs -->
+    <div class="puzzle-glow-blob blob-1" aria-hidden="true"></div>
+    <div class="puzzle-glow-blob blob-2" aria-hidden="true"></div>
+    <div class="puzzle-glow-blob blob-3" aria-hidden="true"></div>
+
+    <div class="puzzle-container">
+      <!-- Title -->
+      <div class="puzzle-header-block">
+        <p class="puzzle-title">Arrange the Pieces 💖</p>
+        <p class="puzzle-subtitle">Drag or tap tiles to complete the photo</p>
+      </div>
+
+      <!-- Main puzzle area -->
+      <div class="puzzle-main-area">
+        <!-- Left: scrambled piece tray -->
+        <div class="puzzle-tray-wrap">
+          <div class="puzzle-section-label">Tiles Tray</div>
+          <div class="puzzle-tray" id="puzzle-tray" aria-label="Puzzle pieces tray"></div>
+        </div>
+
+        <!-- Right: solution board -->
+        <div class="puzzle-board-wrap">
+          <div class="puzzle-section-label">Arrange Here</div>
+          <div class="puzzle-board" id="puzzle-board" aria-label="Puzzle solution board"></div>
+
+          <!-- Progress -->
+          <div class="puzzle-progress-bar-wrap">
+            <div class="puzzle-progress-fill"></div>
+          </div>
+          <p class="puzzle-progress-label">0 / 8 pieces placed</p>
+
+          <!-- Action buttons -->
+          <div class="puzzle-action-buttons">
+            <button type="button" class="puzzle-btn puzzle-shuffle-btn" id="puzzle-reset-btn" aria-label="Reset puzzle">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       PUZZLE COMPLETE — Question modal
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div id="puzzle-question-modal" role="dialog" aria-modal="true" aria-labelledby="pq-title">
+    <div class="puzzle-question-card">
+      <p class="question-title" id="pq-title">Puzzle Complete!</p>
+      <p class="question-text">Ikaw lage ni liks?</p>
+      <div class="question-choices">
+        <button type="button" class="question-btn yes" id="pq-yes-btn">Yes</button>
+        <button type="button" class="question-btn no"  id="pq-no-btn">No</button>
+      </div>
+      <p class="wrong-hint" aria-live="polite"></p>
+    </div>
+  </div>
 
   <!-- Ambient Glowing Background Spheres -->
   <div class="ambient-glow-sphere sphere-1" aria-hidden="true"></div>
@@ -895,6 +985,7 @@
 
   <!-- Scripts -->
   <script src="js/config.js"></script>
+  <script src="js/puzzle.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>
