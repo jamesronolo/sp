@@ -21,7 +21,6 @@
     partnerName: "Lyka Macabudbud",
     enableMusic: true,
     musicSrc: "assets/audio/song.mp3",
-    rainLanes: 6,
     media: [],
     notes: ["I love you! 💖"]
   };
@@ -60,6 +59,10 @@
   const secondsEl = document.getElementById('count-seconds');
   const galleryGrid = document.getElementById('gallery-grid');
   const filterBtns = document.querySelectorAll('.filter-btn');
+  const galleryUploadPhotoBtn = document.getElementById('gallery-upload-photo-btn');
+  const galleryUploadVideoBtn = document.getElementById('gallery-upload-video-btn');
+  const galleryPhotoInput = document.getElementById('gallery-photo-input');
+  const galleryVideoInput = document.getElementById('gallery-video-input');
   
   // Media Modal Elements
   const mediaModal = document.getElementById('media-modal');
@@ -67,8 +70,16 @@
   const modalMediaStage = document.getElementById('modal-media-stage');
   const modalCaption = document.getElementById('modal-caption');
   const modalCounter = document.getElementById('modal-counter');
+  const modalDeleteBtn = document.getElementById('modal-delete-btn');
   const modalPrevBtn = document.getElementById('modal-prev-btn');
   const modalNextBtn = document.getElementById('modal-next-btn');
+
+  // Gallery Delete Confirmation Modal Elements
+  const galleryDeleteModal = document.getElementById('gallery-delete-modal');
+  const galleryDeleteTitle = document.getElementById('gallery-delete-title');
+  const galleryDeleteDesc = document.getElementById('gallery-delete-desc');
+  const galleryDeleteConfirmBtn = document.getElementById('gallery-delete-confirm-btn');
+  const galleryDeleteCancelBtn = document.getElementById('gallery-delete-cancel-btn');
 
   // Note Modal Elements
   const noteModal = document.getElementById('note-modal');
@@ -104,6 +115,22 @@
   const ctrlNextBtn = document.getElementById('ctrl-next-btn');
   const playerVolumeSlider = document.getElementById('player-volume-slider');
 
+  // Global Site Toast Notification
+  let siteToastTimeout = null;
+  function showSiteToast(msg, icon = '✨') {
+    const toastEl = document.getElementById('pbooth-toast');
+    const toastIcon = document.getElementById('pbooth-toast-icon');
+    const toastMsg = document.getElementById('pbooth-toast-msg');
+    if (!toastEl) return;
+    if (siteToastTimeout) clearTimeout(siteToastTimeout);
+    if (toastIcon) toastIcon.textContent = icon;
+    if (toastMsg) toastMsg.textContent = msg;
+    toastEl.classList.add('show');
+    siteToastTimeout = setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 3200);
+  }
+
   /* ==========================================================================
      1. INITIALIZATION & HERO SETUP
      ========================================================================== */
@@ -120,8 +147,9 @@
     // 2. Start Together Since Counter
     initCounter();
 
-    // 3. Populate Gallery
+    // 3. Populate Gallery & Typewriter Title
     initGallery();
+    initTypewriter();
 
     // 4. Setup Falling Media Rain & Love Emojis Shower
     initRain();
@@ -213,9 +241,8 @@
   let currentActiveLaneCount = 0;
 
   function getAvailableRainImage() {
-    const allImages = (cfg.media && cfg.media.length > 0)
-      ? cfg.media.filter(m => m.type === 'image')
-      : [];
+    const poolSource = (galleryMedia && galleryMedia.length > 0) ? galleryMedia : (cfg.media || []);
+    const allImages = poolSource.filter(m => m.type === 'image');
 
     if (allImages.length === 0) {
       return cfg.media[0] || { type: 'image', src: 'assets/images/image1.jpg', caption: 'Our Memory' };
@@ -366,7 +393,8 @@
     // CLICK EVENT: Open modal lightbox!
     const openCardMemory = (e) => {
       e.stopPropagation();
-      openModal(mediaIndex >= 0 ? mediaIndex : 0);
+      const curIdx = galleryMedia.findIndex(m => (m.src && m.src === mediaItem.src) || (m.id && m.id === mediaItem.id));
+      openModal(curIdx >= 0 ? curIdx : (mediaIndex >= 0 ? mediaIndex : 0));
     };
 
     card.addEventListener('click', openCardMemory);
@@ -544,99 +572,517 @@
   }
 
   /* ==========================================================================
-     4. GALLERY COMPONENT
+     TYPEWRITER ANIMATION FOR "TREASURED MOMENTS" SECTION TITLE
      ========================================================================== */
-  function initGallery() {
-    if (!galleryGrid || !cfg.media) return;
+  function initTypewriter() {
+    const el = document.getElementById('gallery-typewriter-text');
+    if (!el) return;
 
-    galleryGrid.innerHTML = '';
+    // Romantic words that alternate dynamically with "Treasured ..."
+    const words = [
+      'Moments',
+      'Memories',
+      'Smiles',
+      'Adventures',
+      'Laughter',
+      'Sweet Days',
+      'Love Stories',
+      'Chapters',
+      'Keepsakes',
+      'Forever'
+    ];
 
-    cfg.media.forEach((item, index) => {
-      const galleryItem = document.createElement('article');
-      galleryItem.className = 'gallery-item';
-      galleryItem.setAttribute('data-type', item.type);
-      galleryItem.setAttribute('tabindex', '0');
-      galleryItem.setAttribute('role', 'button');
-      galleryItem.setAttribute('aria-label', `View ${item.caption || 'item ' + (index + 1)}`);
+    let wordIdx = 0;
+    let charIdx = words[0].length;
+    let isDeleting = true;
 
-      const thumbWrapper = document.createElement('div');
-      thumbWrapper.className = 'gallery-media-thumb';
+    // Let user see initial word "Moments" before the first backspace
+    setTimeout(() => {
+      tick();
+    }, 2400);
 
-      if (item.type === 'video') {
-        const vid = document.createElement('video');
-        vid.src = item.src;
-        vid.muted = true;
-        vid.playsInline = true;
-        vid.preload = 'metadata';
-        thumbWrapper.appendChild(vid);
+    function tick() {
+      const currentWord = words[wordIdx];
 
-        const badge = document.createElement('div');
-        badge.className = 'gallery-badge';
-        badge.innerHTML = `<span>▶</span> Video`;
-        thumbWrapper.appendChild(badge);
-      } else {
-        const img = document.createElement('img');
-        img.src = item.src;
-        img.alt = item.caption || `Photo ${index + 1}`;
-        img.loading = 'lazy';
-        thumbWrapper.appendChild(img);
+      if (isDeleting) {
+        charIdx--;
+        el.textContent = currentWord.substring(0, charIdx);
 
-        const badge = document.createElement('div');
-        badge.className = 'gallery-badge';
-        badge.innerHTML = `<span>📷</span> Photo`;
-        thumbWrapper.appendChild(badge);
-      }
-
-      const infoBox = document.createElement('div');
-      infoBox.className = 'gallery-info';
-
-      const caption = document.createElement('div');
-      caption.className = 'gallery-caption';
-      caption.textContent = item.caption || `Cherished Moment #${index + 1}`;
-
-      const meta = document.createElement('div');
-      meta.className = 'gallery-meta';
-      meta.innerHTML = `
-        <span class="gallery-action-hint">Enlarge ↗</span>
-      `;
-
-      infoBox.appendChild(caption);
-      infoBox.appendChild(meta);
-
-      galleryItem.appendChild(thumbWrapper);
-      galleryItem.appendChild(infoBox);
-
-      // Open Modal on click
-      galleryItem.addEventListener('click', () => {
-        openModal(index);
-      });
-      galleryItem.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          openModal(index);
+        if (charIdx <= 0) {
+          isDeleting = false;
+          wordIdx = (wordIdx + 1) % words.length;
+          // Short pause after backspacing before typing next word
+          setTimeout(tick, 380);
+          return;
         }
-      });
 
-      galleryGrid.appendChild(galleryItem);
+        // Fast deleting speed with subtle human variation
+        const deleteSpeed = 40 + Math.random() * 25;
+        setTimeout(tick, deleteSpeed);
+      } else {
+        charIdx++;
+        el.textContent = currentWord.substring(0, charIdx);
+
+        if (charIdx === currentWord.length) {
+          isDeleting = true;
+          // Hold completed word for user to appreciate
+          setTimeout(tick, 2200);
+          return;
+        }
+
+        // Natural typing rhythm
+        const typeSpeed = 75 + Math.random() * 55;
+        setTimeout(tick, typeSpeed);
+      }
+    }
+  }
+
+  /* ==========================================================================
+     4. GALLERY COMPONENT & REALTIME PERSISTENT STORAGE (IndexedDB)
+     ========================================================================== */
+  const GALLERY_DB_NAME = 'RomanceGalleryDB';
+  const GALLERY_DB_VERSION = 1;
+  const GALLERY_STORE_NAME = 'custom_gallery_media';
+  const DELETED_DEFAULT_KEYS_STORAGE = 'lyka_deleted_default_gallery_media_v1';
+
+  let galleryMedia = [];
+  let currentActiveFilter = 'all';
+  let galleryItemPendingDelete = null;
+  let galleryCardPendingDeleteEl = null;
+
+  function openGalleryDB() {
+    return new Promise((resolve) => {
+      if (!window.indexedDB) {
+        resolve(null);
+        return;
+      }
+      const request = indexedDB.open(GALLERY_DB_NAME, GALLERY_DB_VERSION);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(GALLERY_STORE_NAME)) {
+          db.createObjectStore(GALLERY_STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = (e) => resolve(e.target.result);
+      request.onerror = (e) => {
+        console.warn('Gallery IndexedDB open error:', e);
+        resolve(null);
+      };
+    });
+  }
+
+  async function saveGalleryItemToIndexedDB(item, fileBlob) {
+    try {
+      const db = await openGalleryDB();
+      if (!db) return;
+      const tx = db.transaction(GALLERY_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(GALLERY_STORE_NAME);
+      store.put({
+        id: item.id,
+        type: item.type,
+        caption: item.caption,
+        filename: item.filename || '',
+        blob: fileBlob,
+        timestamp: item.timestamp || Date.now()
+      });
+    } catch (e) {
+      console.warn('Gallery IndexedDB save error:', e);
+    }
+  }
+
+  async function loadGalleryItemsFromIndexedDB() {
+    try {
+      const db = await openGalleryDB();
+      if (!db) return [];
+      return new Promise((resolve) => {
+        const tx = db.transaction(GALLERY_STORE_NAME, 'readonly');
+        const store = tx.objectStore(GALLERY_STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const results = req.result || [];
+          const items = results.map(item => {
+            let src = '';
+            if (item.blob) {
+              src = URL.createObjectURL(item.blob);
+            }
+            return {
+              id: item.id,
+              type: item.type,
+              caption: item.caption,
+              src: src,
+              filename: item.filename,
+              isUserUploaded: true,
+              timestamp: item.timestamp || Date.now(),
+              blob: item.blob
+            };
+          });
+          resolve(items);
+        };
+        req.onerror = () => resolve([]);
+      });
+    } catch (e) {
+      console.warn('Gallery IndexedDB load error:', e);
+      return [];
+    }
+  }
+
+  async function deleteGalleryItemFromIndexedDB(id) {
+    try {
+      const db = await openGalleryDB();
+      if (!db) return;
+      const tx = db.transaction(GALLERY_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(GALLERY_STORE_NAME);
+      store.delete(id);
+    } catch (e) {
+      console.warn('Gallery IndexedDB delete error:', e);
+    }
+  }
+
+  function getDeletedDefaultKeys() {
+    try {
+      const raw = localStorage.getItem(DELETED_DEFAULT_KEYS_STORAGE);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  function addDeletedDefaultKey(key) {
+    try {
+      const set = getDeletedDefaultKeys();
+      set.add(key);
+      localStorage.setItem(DELETED_DEFAULT_KEYS_STORAGE, JSON.stringify(Array.from(set)));
+    } catch (e) {}
+  }
+
+  function createGalleryCard(item, index) {
+    const galleryItem = document.createElement('article');
+    galleryItem.className = 'gallery-item';
+    galleryItem.setAttribute('data-type', item.type);
+    galleryItem.setAttribute('data-id', item.id || item.src);
+    galleryItem.setAttribute('tabindex', '0');
+    galleryItem.setAttribute('role', 'button');
+    galleryItem.setAttribute('aria-label', `View ${item.caption || (item.type === 'video' ? 'video' : 'photo') + ' ' + (index + 1)}`);
+
+    const thumbWrapper = document.createElement('div');
+    thumbWrapper.className = 'gallery-media-thumb';
+
+    if (item.type === 'video') {
+      const vid = document.createElement('video');
+      vid.src = item.src;
+      vid.muted = true;
+      vid.playsInline = true;
+      vid.preload = 'metadata';
+      thumbWrapper.appendChild(vid);
+
+      const badge = document.createElement('div');
+      badge.className = 'gallery-badge';
+      badge.innerHTML = `<span>▶</span> Video`;
+      thumbWrapper.appendChild(badge);
+    } else {
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.caption || `Photo ${index + 1}`;
+      img.loading = 'lazy';
+      thumbWrapper.appendChild(img);
+
+      const badge = document.createElement('div');
+      badge.className = 'gallery-badge';
+      badge.innerHTML = `<span>📷</span> Photo`;
+      thumbWrapper.appendChild(badge);
+    }
+
+    const infoBox = document.createElement('div');
+    infoBox.className = 'gallery-info';
+
+    const caption = document.createElement('div');
+    caption.className = 'gallery-caption';
+    caption.textContent = item.caption || `Cherished Moment #${index + 1}`;
+
+    const meta = document.createElement('div');
+    meta.className = 'gallery-meta';
+    meta.innerHTML = `<span class="gallery-action-hint">Enlarge ↗</span>`;
+
+    infoBox.appendChild(caption);
+    infoBox.appendChild(meta);
+
+    galleryItem.appendChild(thumbWrapper);
+    galleryItem.appendChild(infoBox);
+
+    // Open Modal on click
+    galleryItem.addEventListener('click', () => {
+      const curIndex = galleryMedia.findIndex(m => (m.id && m.id === item.id) || m.src === item.src);
+      openModal(curIndex >= 0 ? curIndex : index);
     });
 
-    // Setup Category Filters
-    filterBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        filterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    galleryItem.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const curIndex = galleryMedia.findIndex(m => (m.id && m.id === item.id) || m.src === item.src);
+        openModal(curIndex >= 0 ? curIndex : index);
+      }
+    });
 
-        const filter = btn.getAttribute('data-filter');
-        const items = galleryGrid.querySelectorAll('.gallery-item');
+    return galleryItem;
+  }
 
-        items.forEach(item => {
-          if (filter === 'all' || item.getAttribute('data-type') === filter) {
-            item.style.display = 'block';
-          } else {
-            item.style.display = 'none';
-          }
-        });
+  function renderGalleryCards() {
+    if (!galleryGrid) return;
+    galleryGrid.innerHTML = '';
+
+    galleryMedia.forEach((item, index) => {
+      const card = createGalleryCard(item, index);
+      if (currentActiveFilter !== 'all' && item.type !== currentActiveFilter) {
+        card.style.display = 'none';
+      }
+      galleryGrid.appendChild(card);
+    });
+  }
+
+  function applyGalleryFilter(filter) {
+    if (!filter) return;
+    currentActiveFilter = filter;
+    filterBtns.forEach(b => {
+      const f = b.getAttribute('data-filter');
+      if (f) {
+        if (f === filter) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      }
+    });
+
+    const items = galleryGrid ? galleryGrid.querySelectorAll('.gallery-item') : [];
+    items.forEach(item => {
+      if (filter === 'all' || item.getAttribute('data-type') === filter) {
+        item.style.display = 'block';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  }
+
+  function setupGalleryUploads() {
+    // 1. Upload Photo button
+    if (galleryUploadPhotoBtn && galleryPhotoInput) {
+      galleryUploadPhotoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        galleryPhotoInput.click();
       });
+
+      galleryPhotoInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        for (const file of files) {
+          const fileUrl = URL.createObjectURL(file);
+          const rawName = file.name.replace(/\.[^/.]+$/, "");
+          const newItem = {
+            id: `user-gallery-photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            type: 'image',
+            src: fileUrl,
+            caption: rawName || 'Our Treasured Photo',
+            filename: file.name,
+            isUserUploaded: true,
+            timestamp: Date.now()
+          };
+
+          // 1. Add to front of array in realtime
+          galleryMedia.unshift(newItem);
+
+          // 2. Persist in IndexedDB permanently
+          await saveGalleryItemToIndexedDB(newItem, file);
+        }
+
+        // Switch filter so new photo is immediately visible
+        if (currentActiveFilter === 'video') {
+          applyGalleryFilter('image');
+        }
+
+        // Re-render gallery grid in real time
+        renderGalleryCards();
+
+        showSiteToast(files.length > 1 ? `${files.length} Photos uploaded! 📸` : 'Photo uploaded to gallery! 📸', '📸');
+        galleryPhotoInput.value = '';
+      });
+    }
+
+    // 2. Upload Video button
+    if (galleryUploadVideoBtn && galleryVideoInput) {
+      galleryUploadVideoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        galleryVideoInput.click();
+      });
+
+      galleryVideoInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        for (const file of files) {
+          const fileUrl = URL.createObjectURL(file);
+          const rawName = file.name.replace(/\.[^/.]+$/, "");
+          const newItem = {
+            id: `user-gallery-video-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            type: 'video',
+            src: fileUrl,
+            caption: rawName || 'Our Treasured Video',
+            filename: file.name,
+            isUserUploaded: true,
+            timestamp: Date.now()
+          };
+
+          // 1. Add to front of array in realtime
+          galleryMedia.unshift(newItem);
+
+          // 2. Persist in IndexedDB permanently
+          await saveGalleryItemToIndexedDB(newItem, file);
+        }
+
+        // Switch filter so new video is immediately visible
+        if (currentActiveFilter === 'image') {
+          applyGalleryFilter('video');
+        }
+
+        // Re-render gallery grid in real time
+        renderGalleryCards();
+
+        showSiteToast(files.length > 1 ? `${files.length} Videos uploaded! 🎥` : 'Video uploaded to gallery! 🎥', '🎥');
+        galleryVideoInput.value = '';
+      });
+    }
+  }
+
+  function openGalleryDeleteModal(item, cardEl = null) {
+    galleryItemPendingDelete = item;
+    galleryCardPendingDeleteEl = cardEl;
+
+    if (galleryDeleteTitle) {
+      galleryDeleteTitle.textContent = `Delete ${item.type === 'video' ? 'Video' : 'Photo'}?`;
+    }
+    if (galleryDeleteDesc) {
+      galleryDeleteDesc.textContent = `"${item.caption || (item.type === 'video' ? 'This video' : 'This photo')}" will be deleted permanently from your gallery and cannot be recovered.`;
+    }
+
+    if (galleryDeleteModal) {
+      galleryDeleteModal.classList.add('active');
+      galleryDeleteModal.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function closeGalleryDeleteModal() {
+    if (galleryDeleteModal) {
+      galleryDeleteModal.classList.remove('active');
+      galleryDeleteModal.setAttribute('aria-hidden', 'true');
+    }
+    galleryItemPendingDelete = null;
+    galleryCardPendingDeleteEl = null;
+  }
+
+  async function executeGalleryDelete() {
+    if (!galleryItemPendingDelete) return;
+
+    const target = galleryItemPendingDelete;
+    const isVideo = target.type === 'video';
+
+    // 1. Delete from persistence
+    if (target.isUserUploaded) {
+      await deleteGalleryItemFromIndexedDB(target.id);
+    } else {
+      addDeletedDefaultKey(target.src || target.id || target.caption);
+    }
+
+    // 2. Remove from active galleryMedia array
+    const targetIdx = galleryMedia.findIndex(m => (m.id && m.id === target.id) || m.src === target.src);
+    if (targetIdx >= 0) {
+      galleryMedia.splice(targetIdx, 1);
+    }
+
+    // 3. Remove DOM element in real-time
+    const targetKey = target.id || target.src;
+    const cardEl = galleryCardPendingDeleteEl || (galleryGrid ? galleryGrid.querySelector(`[data-id="${targetKey}"]`) : null);
+    if (cardEl) {
+      cardEl.style.transition = 'all 0.3s ease';
+      cardEl.style.opacity = '0';
+      cardEl.style.transform = 'scale(0.85)';
+      setTimeout(() => {
+        if (cardEl) cardEl.remove();
+      }, 300);
+    } else {
+      renderGalleryCards();
+    }
+
+    // 4. If Lightbox preview was open for this item:
+    if (mediaModal && mediaModal.classList.contains('active')) {
+      if (galleryMedia.length === 0) {
+        closeModal();
+      } else {
+        if (currentModalIndex >= galleryMedia.length) {
+          currentModalIndex = Math.max(0, galleryMedia.length - 1);
+        }
+        updateModalContent();
+      }
+    }
+
+    closeGalleryDeleteModal();
+    showSiteToast(`${isVideo ? 'Video' : 'Photo'} deleted permanently`, '🗑️');
+  }
+
+  function setupGalleryDeleteModal() {
+    if (galleryDeleteConfirmBtn) {
+      galleryDeleteConfirmBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        executeGalleryDelete();
+      });
+    }
+
+    if (galleryDeleteCancelBtn) {
+      galleryDeleteCancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeGalleryDeleteModal();
+      });
+    }
+
+    if (galleryDeleteModal) {
+      galleryDeleteModal.addEventListener('click', (e) => {
+        if (e.target === galleryDeleteModal) {
+          closeGalleryDeleteModal();
+        }
+      });
+    }
+  }
+
+  function initGallery() {
+    if (!galleryGrid) return;
+
+    // 1. Initial synchronous paint from defaults minus deleted items (zero delay)
+    const deletedKeys = getDeletedDefaultKeys();
+    const defaultItems = (cfg.media || []).filter(item => {
+      const key = item.src || item.id || item.caption;
+      return !deletedKeys.has(key);
+    });
+    galleryMedia = [...defaultItems];
+    renderGalleryCards();
+
+    // 2. Setup Category Filters
+    filterBtns.forEach(btn => {
+      const filter = btn.getAttribute('data-filter');
+      if (!filter) return;
+      btn.addEventListener('click', () => {
+        applyGalleryFilter(filter);
+      });
+    });
+
+    // 3. Setup Realtime Uploads & Delete Modals
+    setupGalleryUploads();
+    setupGalleryDeleteModal();
+
+    // 4. Asynchronously load user-uploaded media from IndexedDB & merge
+    loadGalleryItemsFromIndexedDB().then(customItems => {
+      if (customItems && customItems.length > 0) {
+        galleryMedia = [...customItems, ...defaultItems];
+        renderGalleryCards();
+      }
     });
   }
 
@@ -644,10 +1090,10 @@
      5. LIGHTBOX MODAL (AUTO-PAUSES MUSIC ON VIDEOS, RESUMES ON CLOSE, RAIN CONTINUES)
      ========================================================================== */
   function openModal(index) {
-    if (!cfg.media || cfg.media.length === 0) return;
+    if (!galleryMedia || galleryMedia.length === 0) return;
 
-    currentModalIndex = index;
-    const item = cfg.media[currentModalIndex];
+    currentModalIndex = (index + galleryMedia.length) % galleryMedia.length;
+    const item = galleryMedia[currentModalIndex];
 
     // Automatically pause background music if opening a video
     if (item && item.type === 'video') {
@@ -655,7 +1101,6 @@
         wasMusicPlayingBeforeVideo = true;
         stopMusic();
       } else if (cfg.autoPlayOnFirstClick && !hasAutoStarted) {
-        // If this is the user's first click, don't start music now, but schedule it to start when returning!
         hasAutoStarted = true;
         wasMusicPlayingBeforeVideo = true;
       }
@@ -669,7 +1114,6 @@
     if (mediaModal) {
       mediaModal.classList.add('active');
       mediaModal.setAttribute('aria-hidden', 'false');
-      // Focus the close button for accessibility
       if (modalCloseBtn) modalCloseBtn.focus();
     }
   }
@@ -697,9 +1141,13 @@
   }
 
   function updateModalContent() {
-    if (!modalMediaStage) return;
+    if (!modalMediaStage || !galleryMedia || galleryMedia.length === 0) return;
 
-    const item = cfg.media[currentModalIndex];
+    if (currentModalIndex >= galleryMedia.length) {
+      currentModalIndex = 0;
+    }
+
+    const item = galleryMedia[currentModalIndex];
     if (!item) return;
 
     modalMediaStage.innerHTML = '';
@@ -713,7 +1161,6 @@
       vid.style.maxHeight = '65vh';
       vid.style.maxWidth = '100%';
 
-      // Ensure background music turns off whenever the video plays
       vid.addEventListener('play', () => {
         if (isMusicPlaying) {
           wasMusicPlayingBeforeVideo = true;
@@ -721,7 +1168,6 @@
         }
       });
 
-      // When the video ends, resume background music
       vid.addEventListener('ended', () => {
         if (wasMusicPlayingBeforeVideo) {
           wasMusicPlayingBeforeVideo = false;
@@ -731,7 +1177,6 @@
 
       modalMediaStage.appendChild(vid);
     } else {
-      // If we switched from a video to a photo, resume music
       if (wasMusicPlayingBeforeVideo) {
         wasMusicPlayingBeforeVideo = false;
         startMusic();
@@ -749,19 +1194,20 @@
       modalCaption.textContent = item.caption || `Moment #${currentModalIndex + 1}`;
     }
     if (modalCounter) {
-      modalCounter.textContent = `${currentModalIndex + 1} of ${cfg.media.length}`;
+      modalCounter.textContent = `${currentModalIndex + 1} of ${galleryMedia.length}`;
     }
   }
 
   function nextModalItem() {
-    const prevItem = cfg.media[currentModalIndex];
+    if (!galleryMedia || galleryMedia.length === 0) return;
+    const prevItem = galleryMedia[currentModalIndex];
     if (prevItem && prevItem.type === 'video' && modalMediaStage) {
       const vid = modalMediaStage.querySelector('video');
       if (vid) vid.pause();
     }
 
-    currentModalIndex = (currentModalIndex + 1) % cfg.media.length;
-    const nextItem = cfg.media[currentModalIndex];
+    currentModalIndex = (currentModalIndex + 1) % galleryMedia.length;
+    const nextItem = galleryMedia[currentModalIndex];
 
     if (nextItem && nextItem.type === 'video') {
       if (isMusicPlaying) {
@@ -779,14 +1225,15 @@
   }
 
   function prevModalItem() {
-    const prevItem = cfg.media[currentModalIndex];
+    if (!galleryMedia || galleryMedia.length === 0) return;
+    const prevItem = galleryMedia[currentModalIndex];
     if (prevItem && prevItem.type === 'video' && modalMediaStage) {
       const vid = modalMediaStage.querySelector('video');
       if (vid) vid.pause();
     }
 
-    currentModalIndex = (currentModalIndex - 1 + cfg.media.length) % cfg.media.length;
-    const nextItem = cfg.media[currentModalIndex];
+    currentModalIndex = (currentModalIndex - 1 + galleryMedia.length) % galleryMedia.length;
+    const nextItem = galleryMedia[currentModalIndex];
 
     if (nextItem && nextItem.type === 'video') {
       if (isMusicPlaying) {
@@ -1846,6 +2293,15 @@
     if (modalCloseBtn) {
       modalCloseBtn.addEventListener('click', closeModal);
     }
+    const triggerModalDelete = (e) => {
+      e.stopPropagation();
+      if (galleryMedia && galleryMedia[currentModalIndex]) {
+        openGalleryDeleteModal(galleryMedia[currentModalIndex]);
+      }
+    };
+    if (modalDeleteBtn) {
+      modalDeleteBtn.addEventListener('click', triggerModalDelete);
+    }
     if (modalPrevBtn) {
       modalPrevBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1910,6 +2366,10 @@
     window.addEventListener('keydown', (e) => {
       // Escape key closes modals
       if (e.key === 'Escape') {
+        if (galleryDeleteModal && galleryDeleteModal.classList.contains('active')) {
+          closeGalleryDeleteModal();
+          return;
+        }
         if (mediaModal && mediaModal.classList.contains('active')) {
           closeModal();
         }
@@ -2006,14 +2466,18 @@
     const pboothResultImg = document.getElementById('pbooth-result-img');
     const pboothDownloadBtn = document.getElementById('pbooth-download-btn');
     const pboothRetakeBtn = document.getElementById('pbooth-retake-btn');
+    const pboothSaveBtn = document.getElementById('pbooth-save-btn');
+    const pboothSaveBtnText = document.getElementById('pbooth-save-btn-text');
     const pboothViewHistoryShortcutBtn = document.getElementById('pbooth-view-history-shortcut-btn');
 
     // Controls
     const pboothControlsBar = document.getElementById('pbooth-controls-bar');
     const pboothSnapBtn = document.getElementById('pbooth-snap-btn');
-    const pboothSnapBtnCounter = document.getElementById('pbooth-snap-btn-counter');
     const pboothResetShotsBtn = document.getElementById('pbooth-reset-shots-btn');
     const pboothMirrorBtn = document.getElementById('pbooth-mirror-btn');
+    const pboothFlipCamBtn = document.getElementById('pbooth-flip-cam-btn');
+    const pboothFloatingFlipBtn = document.getElementById('pbooth-floating-flip-btn');
+    const pboothFlipBadge = document.getElementById('pbooth-flip-badge');
 
     // History elements
     const historyGrid = document.getElementById('pbooth-history-grid');
@@ -2039,6 +2503,7 @@
     let isTakingPhoto = false;
     let capturedShots = []; // Holds synchronous in-memory canvas frames
     let lastRenderedDataUrl = null;
+    let isCurrentSnapSaved = false;
     let itemToDeleteId = null;
     let toastTimeout = null;
 
@@ -2046,14 +2511,7 @@
 
     // Helper: Show toast notification
     function showToast(msg, icon = '✨') {
-      if (!pboothToast) return;
-      if (toastTimeout) clearTimeout(toastTimeout);
-      pboothToastIcon.textContent = icon;
-      pboothToastMsg.textContent = msg;
-      pboothToast.classList.add('show');
-      toastTimeout = setTimeout(() => {
-        pboothToast.classList.remove('show');
-      }, 3000);
+      showSiteToast(msg, icon);
     }
 
     // Helper: Format real-time day and date
@@ -2156,6 +2614,32 @@
       }
     }
 
+    // Toggle Camera Flip (Switch between Front / Back Camera for mobile & desktop)
+    async function toggleCameraFlip() {
+      facingMode = (facingMode === 'user') ? 'environment' : 'user';
+      const isFront = (facingMode === 'user');
+
+      // Rear/back camera should not be mirrored; front selfie camera defaults to mirrored
+      isMirrored = isFront;
+      if (pboothMirrorBtn) {
+        pboothMirrorBtn.classList.toggle('active', isMirrored);
+      }
+      if (pboothVideo) {
+        pboothVideo.classList.toggle('is-mirrored', isMirrored);
+      }
+
+      // Update badge and button indicators
+      if (pboothFlipBadge) {
+        pboothFlipBadge.textContent = isFront ? 'FRONT' : 'BACK';
+      }
+      if (pboothFlipCamBtn) {
+        pboothFlipCamBtn.classList.toggle('active', !isFront);
+      }
+
+      showToast(isFront ? 'Front Selfie Camera Active 🤳' : 'Back / Rear Camera Active 📷', '🔄');
+      await startCamera();
+    }
+
     // Open & Close Modal
     function openModal() {
       if (!pboothModal) return;
@@ -2221,6 +2705,13 @@
         pboothResultImg.src = dataUrl;
       }
       lastRenderedDataUrl = dataUrl;
+      isCurrentSnapSaved = false;
+
+      // Reset save button state so user has choice to save or retake
+      if (pboothSaveBtn) {
+        pboothSaveBtn.classList.remove('is-saved');
+        pboothSaveBtn.innerHTML = '<span>💾</span><span id="pbooth-save-btn-text">Save Photo</span>';
+      }
     }
 
     // Layout Selector
@@ -2402,19 +2893,9 @@
         }
       }
 
-      // Update snap button counter label
-      if (pboothSnapBtnCounter) {
-        if (totalNeeded === 1) {
-          pboothSnapBtnCounter.textContent = 'Snap Photo';
-        } else {
-          const currentNum = Math.min(shotsDone + 1, totalNeeded);
-          pboothSnapBtnCounter.textContent = `Shot ${currentNum}/${totalNeeded}`;
-        }
-      }
-
       // Show/Hide Reset Button
       if (pboothResetShotsBtn) {
-        pboothResetShotsBtn.style.visibility = shotsDone > 0 ? 'visible' : 'hidden';
+        pboothResetShotsBtn.style.display = shotsDone > 0 ? 'inline-flex' : 'none';
       }
     }
 
@@ -2452,15 +2933,14 @@
         // Render composite photobooth strip with all shots!
         const finalDataUrl = renderPhotoboothCanvas(capturedShots, currentFrame, currentLayout);
         showResult(finalDataUrl);
-        saveSnapToHistory(finalDataUrl, currentFrame, currentLayout);
 
-        // Reset state for next photo session
+        // Reset in-memory shots so user can retake or save as they choose
         capturedShots = [];
         updateShotsUI();
         isTakingPhoto = false;
         if (pboothSnapBtn) pboothSnapBtn.disabled = false;
 
-        showToast('All shots captured & framed! 📸✨', '💖');
+        showToast('Picture ready! Save it or Take Again 📸✨', '💖');
       } else {
         const nextShotNum = capturedShots.length + 1;
         showToast(`Shot ${capturedShots.length} captured! Ready for shot ${nextShotNum} ✨`, '📸');
@@ -4184,9 +4664,13 @@
                 <span>⬇️</span>
                 <span>Download</span>
               </button>
-              <button type="button" class="btn-history-action btn-history-delete" title="Delete permanently">
-                <span>🗑️</span>
-                <span>Delete</span>
+              <button type="button" class="btn-history-action btn-history-delete btn-delete-icon-only" title="Delete permanently" aria-label="Delete photo permanently">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -4270,17 +4754,55 @@
       tabHistoryBtn.addEventListener('click', () => switchTab('history'));
     }
 
-    if (pboothDownloadBtn) {
-      pboothDownloadBtn.addEventListener('click', () => downloadImage(lastRenderedDataUrl));
+    // Save to Snaps History Button
+    if (pboothSaveBtn) {
+      pboothSaveBtn.addEventListener('click', () => {
+        if (!lastRenderedDataUrl) return;
+        if (!isCurrentSnapSaved) {
+          saveSnapToHistory(lastRenderedDataUrl, currentFrame, currentLayout);
+          isCurrentSnapSaved = true;
+          pboothSaveBtn.classList.add('is-saved');
+          pboothSaveBtn.innerHTML = '<span>✓</span><span>Saved to Snaps!</span>';
+          showToast('Photo saved to Snaps History! 💖💾', '✓');
+        } else {
+          showToast('Already saved in Snaps History! 🎞️', '✓');
+        }
+      });
     }
 
+    if (pboothDownloadBtn) {
+      pboothDownloadBtn.addEventListener('click', () => {
+        if (!lastRenderedDataUrl) return;
+        downloadImage(lastRenderedDataUrl);
+        // Also ensure it is recorded in history upon downloading
+        if (!isCurrentSnapSaved) {
+          saveSnapToHistory(lastRenderedDataUrl, currentFrame, currentLayout);
+          isCurrentSnapSaved = true;
+          if (pboothSaveBtn) {
+            pboothSaveBtn.classList.add('is-saved');
+            pboothSaveBtn.innerHTML = '<span>✓</span><span>Saved to Snaps!</span>';
+          }
+        }
+      });
+    }
+
+    // Retake / Take Again Button (Discards current take and returns to live camera)
     if (pboothRetakeBtn) {
       pboothRetakeBtn.addEventListener('click', () => {
         capturedShots = [];
         updateShotsUI();
         showViewfinder();
         startCamera();
+        showToast('Ready to take a new picture! 📸', '✨');
       });
+    }
+
+    // Flip Camera Button (Bottom Controls & Floating Overlay)
+    if (pboothFlipCamBtn) {
+      pboothFlipCamBtn.addEventListener('click', toggleCameraFlip);
+    }
+    if (pboothFloatingFlipBtn) {
+      pboothFloatingFlipBtn.addEventListener('click', toggleCameraFlip);
     }
 
     if (pboothViewHistoryShortcutBtn) {
