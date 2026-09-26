@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="An interactive romantic surprise page with falling memory rain, live together counter, and heartfelt notes.">
   <meta name="theme-color" content="#0a070e">
-  <title>Lyka — Forever & Always 💖</title>
+  <title>Lyka Macabudbud — Forever & Always 💖</title>
 
   <!-- Favicon (Heart Icon) -->
   <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -35,10 +35,13 @@
     </a>
 
     <div class="top-actions">
-      <!-- Rain Freeze / Resume Toggle -->
-      <button id="rain-toggle-btn" class="glass-pill-btn" aria-label="Toggle falling rain">
-        <span>🌧️</span>
-        <span id="rain-toggle-text">Freeze Rain</span>
+      <!-- Rain Freeze / Resume Toggle (Icon Only) -->
+      <button id="rain-toggle-btn" class="glass-pill-btn rain-toggle-circle-btn" aria-label="Toggle falling rain" title="Freeze / Resume Rain">
+        <span class="rain-icon-badge" id="rain-icon-badge">
+          <svg class="rain-svg-icon" viewBox="0 0 24 24" width="11" height="11" fill="#000000" aria-hidden="true" style="margin-left: 1px;">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </span>
       </button>
 
       <!-- Music Player & Playlist Control Group -->
@@ -78,45 +81,48 @@
   <main>
     <section class="hero-section" id="hero-section">
       <div class="hero-glass-card">
-        <div class="hero-badge">
-          <span>✨</span>
-          <span>A Special Gift Just For You</span>
-          <span>✨</span>
-        </div>
-
         <h1 class="hero-title">
-          Forever & Always
-          <span class="hero-partner-name" id="partner-name-display">Lyka</span>
+          <span class="hero-partner-name" id="partner-name-display">Lyka Macabudbud</span>
         </h1>
 
         <p class="hero-subtitle">
           Falling deeper in love with you with every breath, every second, and every memory we share together.
         </p>
 
-        <!-- Live "Together Since" Counter -->
-        <div class="counter-wrapper" aria-label="Time spent together">
+        <!-- Live Real-Time Clock & Weekday Display -->
+        <div class="counter-wrapper" aria-label="Live current time and weekday">
+          <!-- Real-Time "What Time Is Now" Live Clock Pill -->
+          <div class="live-clock-badge" id="live-clock-pill" title="Live Local Current Time">
+            <span class="live-clock-dot" aria-hidden="true"></span>
+            <span class="live-clock-label">What time is now:</span>
+            <span class="live-clock-val" id="live-time-now">--:--:--</span>
+            <span class="live-clock-ampm" id="live-ampm-now">--</span>
+            <span class="live-clock-sep" aria-hidden="true">•</span>
+            <span class="live-clock-date" id="live-date-now">--</span>
+          </div>
+
           <div class="counter-heading">
             <span>⏳</span>
-            <span>Cherishing Every Second Together</span>
+            <span id="counter-heading-text">Cherishing Every Second Together</span>
             <span>⏳</span>
           </div>
 
           <div class="counter-grid">
             <div class="counter-box">
-              <span class="counter-number" id="count-days">0</span>
-              <span class="counter-label">Days</span>
+              <span class="counter-number is-weekday" id="count-days">--</span>
+              <span class="counter-label" id="label-box-1">Week Day</span>
             </div>
             <div class="counter-box">
-              <span class="counter-number" id="count-hours">00</span>
-              <span class="counter-label">Hours</span>
+              <span class="counter-number" id="count-hours">--</span>
+              <span class="counter-label" id="label-box-2">Hours</span>
             </div>
             <div class="counter-box">
-              <span class="counter-number" id="count-minutes">00</span>
-              <span class="counter-label">Minutes</span>
+              <span class="counter-number" id="count-minutes">--</span>
+              <span class="counter-label" id="label-box-3">Minutes</span>
             </div>
             <div class="counter-box">
-              <span class="counter-number" id="count-seconds">00</span>
-              <span class="counter-label">Seconds</span>
+              <span class="counter-number" id="count-seconds">--</span>
+              <span class="counter-label" id="label-box-4">Seconds</span>
             </div>
           </div>
         </div>
@@ -125,28 +131,28 @@
         <div class="hero-cta-group">
           <a href="#gallery-section" class="btn-primary" id="explore-memories-btn">
             <span>📸</span>
-            <span>Explore Our Memories</span>
+            <span>Explore Keepsakes</span>
           </a>
           <button type="button" class="btn-secondary" id="hero-note-btn">
             <span>💌</span>
-            <span>Read A Love Note</span>
+            <span>Read A Note</span>
           </button>
         </div>
 
-        <a href="#gallery-section" class="scroll-indicator" aria-label="Scroll down to memory gallery">
-          <span>Scroll to memories</span>
+        <a href="#gallery-section" class="scroll-indicator" aria-label="Scroll down to keepsake gallery">
+          <span>Scroll to keepsakes</span>
           <span class="scroll-arrow">↓</span>
         </a>
       </div>
     </section>
 
-    <!-- Static Memory Gallery Grid Section -->
+    <!-- Static Keepsakes Gallery Grid Section -->
     <section class="gallery-section" id="gallery-section">
       <div class="section-header">
         <span class="section-tag">Our Keepsakes</span>
         <h2 class="section-title">Treasured Moments</h2>
         <p class="section-subtitle">
-          Every photo and video is a frame of pure happiness. Click any memory to enlarge it full-screen.
+          Every photo and video is a frame of pure happiness. Click any keepsake to enlarge full-screen.
         </p>
 
         <!-- Gallery Filters -->
@@ -158,53 +164,66 @@
       </div>
 
       <!-- Dynamic Gallery Grid -->
-      <div class="gallery-grid" id="gallery-grid" aria-label="Memory collection"></div>
+      <div class="gallery-grid" id="gallery-grid" aria-label="Keepsake collection"></div>
     </section>
   </main>
 
   <!-- Lightbox Modal for Large Media Preview (Freezes rain while open) -->
-  <div id="media-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Enlarged Memory Preview">
+  <div id="media-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Enlarged Preview">
     <div class="modal-content-card">
       <button id="modal-close-btn" class="modal-close-btn" aria-label="Close enlarged preview">✕</button>
-
-      <button id="modal-prev-btn" class="modal-nav-btn modal-nav-prev" aria-label="Previous memory">‹</button>
-      <button id="modal-next-btn" class="modal-nav-btn modal-nav-next" aria-label="Next memory">›</button>
 
       <div id="modal-media-stage" class="modal-media-stage">
         <!-- Enlarged image or video will be injected here -->
       </div>
 
       <div class="modal-caption-bar">
-        <div id="modal-caption" class="modal-caption-text">Cherished Memory</div>
+        <div id="modal-caption" class="modal-caption-text">Cherished Moment</div>
         <div id="modal-counter" class="modal-counter-badge">1 of 16</div>
       </div>
     </div>
   </div>
 
-  <!-- Floating 💌 Love Notes Button -->
-  <button id="floating-note-btn" class="floating-notes-btn" aria-label="Open a sweet love note">
+  <!-- Floating 💌 Note Button -->
+  <button id="floating-note-btn" class="floating-notes-btn" aria-label="Open note">
     <span class="floating-notes-icon">💌</span>
-    <span class="floating-notes-label">Love Note</span>
+    <span class="floating-notes-label">Note</span>
   </button>
 
-  <!-- Love Note Parchment Modal -->
+  <!-- Love Note Envelope & Parchment Modal -->
   <div id="note-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Love Note Letter">
-    <div class="note-modal-card">
-      <div class="note-wax-seal" aria-hidden="true">💌</div>
-      <h3 class="note-greeting" id="note-greeting">For My Love</h3>
+    <div class="envelope-container" id="envelope-container">
+      
+      <!-- Top Right Header Close 'X' Button -->
+      <button id="note-close-btn" class="note-modal-close-btn" aria-label="Close" title="Close">✕</button>
 
-      <div class="note-message-box">
-        <p class="note-body-text" id="note-text">"Loading note..."</p>
+      <!-- Envelope Outer Shell (Flap, pocket, and wax seal) -->
+      <div class="envelope-outer" id="envelope-outer">
+        <div class="envelope-back-wall"></div>
+        <div class="envelope-flap" id="envelope-flap"></div>
+        <div class="envelope-front-pocket"></div>
+        <button class="envelope-seal-btn" id="envelope-seal-btn" type="button" aria-label="Open surprise letter">
+          <span class="seal-wax-circle">
+            <span class="seal-heart-icon">💌</span>
+          </span>
+          <span class="seal-tap-label">Tap to Open</span>
+        </button>
       </div>
 
-      <div class="note-card-actions">
-        <button id="note-next-btn" class="note-action-btn note-btn-next">
-          <span>Another Note 💌</span>
-        </button>
-        <button id="note-close-btn" class="note-action-btn note-btn-close">
-          <span>Keep Close</span>
-        </button>
+      <!-- The Letter Card (slides smoothly out of the envelope) -->
+      <div class="note-modal-card envelope-letter" id="note-modal-card">
+        <div class="note-wax-seal" aria-hidden="true">💖</div>
+        <h3 class="note-greeting" id="note-greeting">Future cumlaude, lyka 💖</h3>
+
+        <div class="note-message-box">
+          <div class="note-quote-decoration">“</div>
+          <p class="note-body-text" id="note-text">
+            Every hour you invest now, even in first year, is a step closer to walking across that stage as a cum laude graduate.
+          </p>
+          <div class="note-author-line" id="note-author">— Stephen Hawking</div>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -290,10 +309,12 @@
     </div>
   </div>
 
+
+
   <!-- Footer -->
-  <footer class="site-footer">
-    <p class="footer-love-msg">Made with endless love, forever and always 💛</p>
-    <p class="footer-copy">Press Escape to close any memory view. Tap any falling photo to pause the moment.</p>
+  <footer class="site-footer"> <p class="footer-love-msg">Made with endless love, forever and always 💛</p>
+
+    <p class="footer-copy">Press Escape to close any preview. Tap any falling photo to pause the moment.</p>
   </footer>
 
   <!-- Scripts -->

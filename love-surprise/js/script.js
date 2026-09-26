@@ -18,8 +18,7 @@
 
   // Fallback config if not defined
   const cfg = window.CONFIG || {
-    partnerName: "My Love",
-    sinceDate: "2023-02-14",
+    partnerName: "Lyka Macabudbud",
     enableMusic: true,
     musicSrc: "assets/audio/song.mp3",
     rainLanes: 6,
@@ -38,6 +37,8 @@
   let isSeeking = false;
   let hasAutoStarted = false;
   let wasMusicPlayingBeforeVideo = false;
+  let isPlaybackPositionRestored = true;
+  let targetSavedTime = 0;
 
   // Playlist array from config or fallback
   const playlist = (cfg.playlist && cfg.playlist.length > 0) ? cfg.playlist : [
@@ -112,8 +113,8 @@
       partnerNameEl.textContent = cfg.partnerName;
     }
     const noteGreeting = document.getElementById('note-greeting');
-    if (noteGreeting && cfg.partnerName) {
-      noteGreeting.textContent = `For ${cfg.partnerName}`;
+    if (noteGreeting) {
+      noteGreeting.textContent = "Future cumlaude, lyka 💖";
     }
 
     // 2. Start Together Since Counter
@@ -136,38 +137,67 @@
   }
 
   /* ==========================================================================
-     2. LIVE "TOGETHER SINCE" COUNTER
+     2. LIVE "WHAT TIME IS NOW" CLOCK & REAL-TIME DISPLAY
      ========================================================================== */
   function initCounter() {
-    function updateCounter() {
-      const startDate = new Date(cfg.sinceDate).getTime();
-      const now = new Date().getTime();
-      const diff = now - startDate;
+    // Elements for live clock pill
+    const liveTimeNowEl = document.getElementById('live-time-now');
+    const liveAmpmNowEl = document.getElementById('live-ampm-now');
+    const liveDateNowEl = document.getElementById('live-date-now');
+    const counterHeadingText = document.getElementById('counter-heading-text');
 
-      if (isNaN(startDate)) {
-        if (daysEl) daysEl.textContent = "0";
-        if (hoursEl) hoursEl.textContent = "00";
-        if (minutesEl) minutesEl.textContent = "00";
-        if (secondsEl) secondsEl.textContent = "00";
-        return;
+    // Box label elements
+    const labelBox1 = document.getElementById('label-box-1');
+    const labelBox2 = document.getElementById('label-box-2');
+    const labelBox3 = document.getElementById('label-box-3');
+    const labelBox4 = document.getElementById('label-box-4');
+
+    // Tick function updating every second
+    function tickCounter() {
+      const now = new Date();
+
+      // 1. Update Live Clock Pill ("What time is now")
+      let h24 = now.getHours();
+      const ampm = h24 >= 12 ? 'PM' : 'AM';
+      let h12 = h24 % 12;
+      h12 = h12 ? h12 : 12; // 0 becomes 12
+      const h12Str = String(h12).padStart(2, '0');
+      const mStr = String(now.getMinutes()).padStart(2, '0');
+      const sStr = String(now.getSeconds()).padStart(2, '0');
+      const weekdayStr = now.toLocaleDateString(undefined, { weekday: 'long' }); // e.g., "Friday"
+
+      if (liveTimeNowEl) liveTimeNowEl.textContent = `${h12Str}:${mStr}:${sStr}`;
+      if (liveAmpmNowEl) liveAmpmNowEl.textContent = ampm;
+      if (liveDateNowEl) {
+        liveDateNowEl.textContent = now.toLocaleDateString(undefined, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
       }
 
-      const isPast = diff >= 0;
-      const totalSeconds = Math.floor(Math.abs(diff) / 1000);
+      // 2. Update Main 4 Counter Boxes: Week Day, Hours, Minutes, Seconds
+      if (daysEl) {
+        daysEl.textContent = weekdayStr;
+        daysEl.classList.add('is-weekday');
+      }
+      if (hoursEl) hoursEl.textContent = h12Str;
+      if (minutesEl) minutesEl.textContent = mStr;
+      if (secondsEl) secondsEl.textContent = sStr;
 
-      const days = Math.floor(totalSeconds / (3600 * 24));
-      const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = Math.floor(totalSeconds % 60);
+      if (labelBox1) labelBox1.textContent = "Week Day";
+      if (labelBox2) labelBox2.textContent = `Hours (${ampm})`;
+      if (labelBox3) labelBox3.textContent = "Minutes";
+      if (labelBox4) labelBox4.textContent = "Seconds";
 
-      if (daysEl) daysEl.textContent = days.toLocaleString();
-      if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
-      if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
-      if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+      if (counterHeadingText) {
+        counterHeadingText.textContent = `Cherishing Every Second With ${cfg.partnerName || "Lyka Macabudbud"}`;
+      }
     }
 
-    updateCounter();
-    setInterval(updateCounter, 1000);
+    // Initial tick & interval
+    tickCounter();
+    setInterval(tickCounter, 1000);
   }
 
   /* ==========================================================================
@@ -375,7 +405,13 @@
     }
     if (rainToggleBtn) {
       rainToggleBtn.classList.add('is-paused');
+      rainToggleBtn.setAttribute('title', 'Resume Rain');
+      rainToggleBtn.setAttribute('aria-label', 'Resume falling rain');
       if (rainToggleText) rainToggleText.textContent = "Resume Rain";
+      const iconBadge = rainToggleBtn.querySelector('.rain-icon-badge');
+      if (iconBadge) {
+        iconBadge.innerHTML = `<svg class="rain-svg-icon" viewBox="0 0 24 24" width="11" height="11" fill="#000000" aria-hidden="true" style="margin-left: 1px;"><path d="M8 5v14l11-7z"/></svg>`;
+      }
     }
   }
 
@@ -386,7 +422,13 @@
     }
     if (rainToggleBtn) {
       rainToggleBtn.classList.remove('is-paused');
+      rainToggleBtn.setAttribute('title', 'Freeze Rain');
+      rainToggleBtn.setAttribute('aria-label', 'Freeze falling rain');
       if (rainToggleText) rainToggleText.textContent = "Freeze Rain";
+      const iconBadge = rainToggleBtn.querySelector('.rain-icon-badge');
+      if (iconBadge) {
+        iconBadge.innerHTML = `<svg class="rain-svg-icon" viewBox="0 0 24 24" width="11" height="11" fill="#000000" aria-hidden="true" style="margin-left: 1px;"><path d="M8 5v14l11-7z"/></svg>`;
+      }
     }
   }
 
@@ -412,7 +454,7 @@
       galleryItem.setAttribute('data-type', item.type);
       galleryItem.setAttribute('tabindex', '0');
       galleryItem.setAttribute('role', 'button');
-      galleryItem.setAttribute('aria-label', `View memory ${index + 1}: ${item.caption || ''}`);
+      galleryItem.setAttribute('aria-label', `View ${item.caption || 'item ' + (index + 1)}`);
 
       const thumbWrapper = document.createElement('div');
       thumbWrapper.className = 'gallery-media-thumb';
@@ -432,7 +474,7 @@
       } else {
         const img = document.createElement('img');
         img.src = item.src;
-        img.alt = item.caption || `Memory ${index + 1}`;
+        img.alt = item.caption || `Photo ${index + 1}`;
         img.loading = 'lazy';
         thumbWrapper.appendChild(img);
 
@@ -452,7 +494,6 @@
       const meta = document.createElement('div');
       meta.className = 'gallery-meta';
       meta.innerHTML = `
-        <span>Memory #${index + 1}</span>
         <span class="gallery-action-hint">Enlarge ↗</span>
       `;
 
@@ -595,7 +636,7 @@
 
       const img = document.createElement('img');
       img.src = item.src;
-      img.alt = item.caption || "Enlarged Memory";
+      img.alt = item.caption || "Enlarged photo";
       img.style.maxHeight = '65vh';
       img.style.maxWidth = '100%';
       modalMediaStage.appendChild(img);
@@ -660,33 +701,89 @@
   }
 
   /* ==========================================================================
-     6. FLOATING 💌 LOVE NOTES MODAL
+     6. ENVELOPE SURPRISE & LOVE NOTES MODAL
      ========================================================================== */
   let lastNoteIndex = -1;
+  let isEnvelopeOpened = false;
 
-  function getRandomNote() {
-    const notes = cfg.notes;
-    if (!notes || notes.length === 0) return "You are loved endlessly! 💖";
-    if (notes.length === 1) return notes[0];
+  function triggerEnvelopeOpening() {
+    if (isEnvelopeOpened) return;
+    isEnvelopeOpened = true;
 
-    let newIndex;
-    do {
-      newIndex = Math.floor(Math.random() * notes.length);
-    } while (newIndex === lastNoteIndex);
+    const envelopeContainer = document.getElementById('envelope-container');
+    if (envelopeContainer) {
+      envelopeContainer.classList.add('is-opening');
 
-    lastNoteIndex = newIndex;
-    return notes[newIndex];
+      const sealBtn = document.getElementById('envelope-seal-btn');
+      if (sealBtn) {
+        const rect = sealBtn.getBoundingClientRect();
+        createHeartBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      } else {
+        createHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
+      }
+
+      setTimeout(() => {
+        envelopeContainer.classList.add('is-open');
+      }, 550);
+    }
   }
 
-  function openNoteModal() {
-    displayRandomNote();
+  function openNoteModal(mode = 'cumlaude') {
+    isEnvelopeOpened = false;
+    const envelopeContainer = document.getElementById('envelope-container');
+    if (envelopeContainer) {
+      envelopeContainer.classList.remove('is-opening', 'is-open');
+    }
+
+    if (mode === 'floating') {
+      displayFloatingNote();
+    } else {
+      // Begin with note index 0 (Cum Laude inspirational quote)
+      lastNoteIndex = 0;
+      displayNoteAtIndex(0);
+    }
 
     if (noteModal) {
       noteModal.classList.add('active');
       noteModal.setAttribute('aria-hidden', 'false');
     }
+  }
 
-    createHeartBurst(window.innerWidth / 2, window.innerHeight / 2);
+  function displayFloatingNote() {
+    if (!noteTextEl) return;
+    const noteAuthorEl = document.getElementById('note-author');
+    const noteGreetingEl = document.getElementById('note-greeting');
+
+    const floatingCfg = (cfg && cfg.floatingNote) || {};
+    const text = typeof floatingCfg === 'object' && floatingCfg.text 
+      ? floatingCfg.text 
+      : (typeof floatingCfg === 'string' ? floatingCfg : "dili manglood kay sayang ka gwapa HAHAHH");
+    const greeting = (typeof floatingCfg === 'object' && floatingCfg.greeting) 
+      ? floatingCfg.greeting 
+      : "For Lyka 💖";
+    const author = (typeof floatingCfg === 'object' && floatingCfg.author !== undefined) 
+      ? floatingCfg.author 
+      : "Forever yours 💖";
+
+    noteTextEl.style.opacity = '0';
+    if (noteAuthorEl) noteAuthorEl.style.opacity = '0';
+
+    setTimeout(() => {
+      noteTextEl.textContent = `"${text}"`;
+      if (noteGreetingEl) {
+        noteGreetingEl.textContent = greeting;
+      }
+      if (noteAuthorEl) {
+        if (author) {
+          noteAuthorEl.textContent = `— ${author}`;
+          noteAuthorEl.style.display = 'block';
+          noteAuthorEl.style.opacity = '1';
+        } else {
+          noteAuthorEl.style.display = 'none';
+        }
+      }
+      noteTextEl.style.opacity = '1';
+    }, 150);
   }
 
   function closeNoteModal() {
@@ -694,19 +791,61 @@
       noteModal.classList.remove('active');
       noteModal.setAttribute('aria-hidden', 'true');
     }
+    const envelopeContainer = document.getElementById('envelope-container');
+    if (envelopeContainer) {
+      envelopeContainer.classList.remove('is-opening', 'is-open');
+    }
+    isEnvelopeOpened = false;
+  }
+
+  function displayNoteAtIndex(index) {
+    if (!noteTextEl) return;
+    const noteAuthorEl = document.getElementById('note-author');
+    const noteGreetingEl = document.getElementById('note-greeting');
+
+    const note = (cfg.notes && cfg.notes[index]) || cfg.notes[0];
+    if (!note) return;
+
+    noteTextEl.style.opacity = '0';
+    if (noteAuthorEl) noteAuthorEl.style.opacity = '0';
+
+    setTimeout(() => {
+      if (typeof note === 'object' && note.text) {
+        noteTextEl.textContent = `"${note.text}"`;
+        if (noteAuthorEl) {
+          noteAuthorEl.textContent = `— ${note.author}`;
+          noteAuthorEl.style.display = 'block';
+          noteAuthorEl.style.opacity = '1';
+        }
+        if (noteGreetingEl) noteGreetingEl.textContent = "Future cumlaude, lyka 💖";
+      } else {
+        noteTextEl.textContent = `"${note}"`;
+        if (noteAuthorEl) {
+          noteAuthorEl.textContent = `— Forever yours 💖`;
+          noteAuthorEl.style.display = 'block';
+          noteAuthorEl.style.opacity = '1';
+        }
+        if (noteGreetingEl) noteGreetingEl.textContent = "For My Love";
+      }
+      noteTextEl.style.opacity = '1';
+    }, 150);
   }
 
   function displayRandomNote() {
-    if (!noteTextEl) return;
+    const notes = cfg.notes;
+    if (!notes || notes.length === 0) return;
 
-    noteTextEl.style.opacity = '0';
-    noteTextEl.style.transform = 'translateY(10px)';
+    let newIndex;
+    if (notes.length === 1) {
+      newIndex = 0;
+    } else {
+      do {
+        newIndex = Math.floor(Math.random() * notes.length);
+      } while (newIndex === lastNoteIndex);
+    }
 
-    setTimeout(() => {
-      noteTextEl.textContent = `"${getRandomNote()}"`;
-      noteTextEl.style.opacity = '1';
-      noteTextEl.style.transform = 'translateY(0)';
-    }, 200);
+    lastNoteIndex = newIndex;
+    displayNoteAtIndex(newIndex);
   }
 
   function createHeartBurst(x, y) {
@@ -834,12 +973,67 @@
       });
 
       if (newTracks.length > 0) {
+        // Remember currently active track before array changes so index never shifts to another song
+        const activeTrack = playlist[currentTrackIndex];
+
         playlist.unshift(...newTracks);
+
+        // Re-align active index to point to the exact same track
+        if (activeTrack) {
+          const reFoundIdx = playlist.indexOf(activeTrack);
+          if (reFoundIdx !== -1) {
+            currentTrackIndex = reFoundIdx;
+            try {
+              localStorage.setItem('love_surprise_track_index', String(currentTrackIndex));
+            } catch (e) {}
+          }
+        }
+
         updatePlaylistCount();
         renderPlaylistCards();
+        updateTrackUI();
       }
     } catch (err) {
       console.warn("IndexedDB restore error:", err);
+    }
+  }
+
+  function seekToSavedTime() {
+    if (isPlaybackPositionRestored || targetSavedTime <= 0) {
+      isPlaybackPositionRestored = true;
+      return;
+    }
+    if (audioPlayer && !isNaN(audioPlayer.duration) && audioPlayer.duration > 0) {
+      // Ensure target time does not overshoot track end to prevent false 'ended' triggers
+      const safeTime = Math.min(targetSavedTime, Math.max(0, audioPlayer.duration - 2));
+      try {
+        audioPlayer.currentTime = safeTime;
+        isPlaybackPositionRestored = true;
+        console.log(`[Soundtrack] Resumed exact position: ${safeTime.toFixed(1)}s / ${audioPlayer.duration.toFixed(1)}s`);
+      } catch (e) {
+        console.warn("[Soundtrack] Seeking deferred until ready:", e);
+      }
+    }
+  }
+
+  function savePlaybackState() {
+    try {
+      const track = playlist[currentTrackIndex];
+      if (track) {
+        localStorage.setItem('love_surprise_track_id', track.id || '');
+        localStorage.setItem('love_surprise_track_src', track.src || '');
+        localStorage.setItem('love_surprise_track_title', track.title || '');
+      }
+      localStorage.setItem('love_surprise_track_index', String(currentTrackIndex));
+
+      // CRITICAL: Only save currentTime if it has already been restored and is valid!
+      // This prevents saving 0 on initial page load / refresh!
+      if (audioPlayer && isPlaybackPositionRestored && !isNaN(audioPlayer.currentTime) && audioPlayer.currentTime > 0) {
+        localStorage.setItem('love_surprise_track_time', String(audioPlayer.currentTime));
+      }
+      localStorage.setItem('love_surprise_music_was_playing', isMusicPlaying ? 'true' : 'false');
+    } catch (e) {
+      console.warn("Could not save playback state:", e);
     }
   }
 
@@ -850,25 +1044,114 @@
       return;
     }
 
-    currentTrackIndex = cfg.defaultTrackIndex || 0;
+    // 1. Restore saved track and playback time from localStorage across refreshes
+    let savedTrackIndex = -1;
+    targetSavedTime = 0;
+    let shouldAutoResume = true;
+
+    try {
+      const savedSrc = localStorage.getItem('love_surprise_track_src');
+      const savedTitle = localStorage.getItem('love_surprise_track_title');
+      const savedId = localStorage.getItem('love_surprise_track_id');
+      const savedIdx = parseInt(localStorage.getItem('love_surprise_track_index'), 10);
+      const rawTime = parseFloat(localStorage.getItem('love_surprise_track_time') || '0');
+      const rawPlaying = localStorage.getItem('love_surprise_music_was_playing');
+
+      if (!isNaN(rawTime) && rawTime > 0) {
+        targetSavedTime = rawTime;
+        isPlaybackPositionRestored = false;
+      } else {
+        isPlaybackPositionRestored = true;
+      }
+
+      if (rawPlaying === 'false') {
+        shouldAutoResume = false;
+      }
+
+      // Match by exact ID, title, or src so reordering tracks or additions don't break
+      if (savedId) {
+        const foundId = playlist.findIndex(t => t.id === savedId);
+        if (foundId !== -1) savedTrackIndex = foundId;
+      }
+      if (savedTrackIndex === -1 && savedTitle) {
+        const foundTitle = playlist.findIndex(t => t.title === savedTitle);
+        if (foundTitle !== -1) savedTrackIndex = foundTitle;
+      }
+      if (savedTrackIndex === -1 && savedSrc) {
+        const foundSrc = playlist.findIndex(t => t.src === savedSrc);
+        if (foundSrc !== -1) savedTrackIndex = foundSrc;
+      }
+      if (savedTrackIndex === -1 && !isNaN(savedIdx) && savedIdx >= 0 && savedIdx < playlist.length) {
+        savedTrackIndex = savedIdx;
+      }
+    } catch (e) {
+      console.warn("Could not read saved playback state:", e);
+      isPlaybackPositionRestored = true;
+    }
+
+    if (savedTrackIndex !== -1) {
+      currentTrackIndex = savedTrackIndex;
+    } else {
+      currentTrackIndex = cfg.defaultTrackIndex || 0;
+    }
+
     const initialTrack = playlist[currentTrackIndex] || playlist[0];
 
     // Prepare HTML5 Audio
     audioPlayer = new Audio();
     audioPlayer.src = encodeURI(initialTrack.src);
-    audioPlayer.loop = false; // Strictly false so 'ended' event fires to auto-advance to next song
+    audioPlayer.loop = false; // Strictly false so track finishes naturally
     audioPlayer.volume = 0.65;
     audioPlayer.preload = 'auto';
 
-    // Auto-advance to the next song when current track ends
+    // Show initial saved elapsed time in UI immediately (don't show 0:00 when reloading mid-song!)
+    if (targetSavedTime > 0 && playerTimeCurrent) {
+      playerTimeCurrent.textContent = formatTime(targetSavedTime);
+    }
+
+    // Attach seeking listener on every media event where currentTime can be safely applied
+    ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'playing'].forEach(evt => {
+      audioPlayer.addEventListener(evt, () => {
+        if (!isPlaybackPositionRestored) {
+          seekToSavedTime();
+        }
+      });
+    });
+
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      if (playerTimeDuration && !isNaN(audioPlayer.duration)) {
+        playerTimeDuration.textContent = formatTime(audioPlayer.duration);
+      }
+      if (playerProgressBar && targetSavedTime > 0 && audioPlayer.duration > 0) {
+        playerProgressBar.value = (targetSavedTime / audioPlayer.duration) * 100;
+      }
+    });
+
+    // Auto-advance to next song ONLY when track genuinely finishes playing naturally to the very end
     audioPlayer.addEventListener('ended', () => {
-      console.log(`[Soundtrack] Track finished: ${playlist[currentTrackIndex]?.title}. Automatically advancing to next song...`);
+      // Guard against false triggers during seek, init, or reload
+      if (!isPlaybackPositionRestored) return;
+      if (!audioPlayer.duration || audioPlayer.duration < 5) return;
+      if (audioPlayer.currentTime < audioPlayer.duration - 2) return;
+
+      console.log(`[Soundtrack] Track finished naturally: ${playlist[currentTrackIndex]?.title}. Advancing to next song...`);
+      targetSavedTime = 0;
+      try {
+        localStorage.setItem('love_surprise_track_time', '0');
+      } catch (e) {}
       nextTrack();
     });
 
-    // Time update for timeline scrubber & elapsed counters
+    // Time update for timeline scrubber & elapsed counters + progress persistence
     audioPlayer.addEventListener('timeupdate', () => {
       if (!audioPlayer || isNaN(audioPlayer.duration)) return;
+
+      // If position has not yet been applied, seek first and do NOT overwrite storage with 0!
+      if (!isPlaybackPositionRestored) {
+        seekToSavedTime();
+        return;
+      }
+
       const cur = audioPlayer.currentTime;
       const dur = audioPlayer.duration;
       if (playerTimeCurrent) playerTimeCurrent.textContent = formatTime(cur);
@@ -876,11 +1159,19 @@
       if (playerProgressBar && !isSeeking) {
         playerProgressBar.value = (cur / dur) * 100;
       }
-    });
 
-    audioPlayer.addEventListener('loadedmetadata', () => {
-      if (playerTimeDuration && !isNaN(audioPlayer.duration)) {
-        playerTimeDuration.textContent = formatTime(audioPlayer.duration);
+      // Persist current playback time periodically ONLY after restored and while actively playing
+      if (cur > 0 && isMusicPlaying) {
+        try {
+          localStorage.setItem('love_surprise_track_time', String(cur));
+          localStorage.setItem('love_surprise_track_index', String(currentTrackIndex));
+          const t = playlist[currentTrackIndex];
+          if (t) {
+            localStorage.setItem('love_surprise_track_id', t.id || '');
+            localStorage.setItem('love_surprise_track_src', t.src || '');
+            localStorage.setItem('love_surprise_track_title', t.title || '');
+          }
+        } catch (e) {}
       }
     });
 
@@ -892,29 +1183,37 @@
       }
     });
 
-    // Populate the 6 song cards in the playlist modal
+    // Populate the song cards in the playlist modal
     renderPlaylistCards();
 
     // Update UI elements with initial track info
     updateTrackUI();
 
-    // Restore any custom uploaded songs from physical assets/audio and IndexedDB (never lost on refresh)
+    // Restore any custom uploaded songs from physical assets/audio and IndexedDB
     loadCustomSoundtracks();
 
-    // AUTOMATIC PLAY ON OPEN:
+    // Save state on tab close or navigation
+    window.addEventListener('beforeunload', savePlaybackState);
+    window.addEventListener('pagehide', savePlaybackState);
+
+    // AUTOMATIC PLAY ON OPEN / RESUME:
     // Attempt playback immediately when the site opens
     const tryAutoPlayImmediately = () => {
-      if (audioPlayer && audioPlayer.src) {
+      if (audioPlayer && audioPlayer.src && shouldAutoResume) {
+        // Attempt immediate playback
         const playPromise = audioPlayer.play();
         if (playPromise !== undefined) {
           playPromise.then(() => {
             isMusicPlaying = true;
             hasAutoStarted = true;
+            seekToSavedTime();
+            savePlaybackState();
             updateTrackUI();
           }).catch((err) => {
-            console.log("Browser policy held immediate audio, waiting for user gesture:", err);
-            // If the browser held automatic audio on initial page load, arm high-priority listeners
-            // for any user interaction (click, touch, pointer, scroll, key) to start immediately
+            console.log("Browser policy held auto-resume until user interaction:", err);
+            isMusicPlaying = false;
+            updateTrackUI();
+
             const triggerAutoplayOnGesture = (e) => {
               const isVideoTarget = e && e.target && e.target.closest && (
                 e.target.closest('[data-type="video"]') || 
@@ -923,7 +1222,8 @@
               if (isVideoTarget) {
                 hasAutoStarted = true;
                 wasMusicPlayingBeforeVideo = true;
-              } else if (!isMusicPlaying) {
+              } else {
+                seekToSavedTime();
                 startMusic();
               }
               ['click', 'touchstart', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
@@ -1017,6 +1317,13 @@
 
     stopSynthRomanticMelody();
 
+    // Since the user explicitly selected a new track, reset saved time
+    isPlaybackPositionRestored = true;
+    targetSavedTime = 0;
+    try {
+      localStorage.setItem('love_surprise_track_time', '0');
+    } catch (e) {}
+
     if (audioPlayer) {
       // Pause current track
       audioPlayer.pause();
@@ -1024,6 +1331,7 @@
       // Encode URI to handle spaces and accents seamlessly
       audioPlayer.src = encodeURI(track.src);
       audioPlayer.currentTime = 0;
+      savePlaybackState();
 
       updateTrackUI();
 
@@ -1034,12 +1342,14 @@
         if (playPromise !== undefined) {
           playPromise.then(() => {
             isMusicPlaying = true;
+            savePlaybackState();
             updateTrackUI();
           }).catch((err) => {
             console.warn("Autoplay waiting for buffer, queuing canplay event:", err);
             const onCanPlay = () => {
               if (isMusicPlaying) {
                 audioPlayer.play().then(() => {
+                  savePlaybackState();
                   updateTrackUI();
                 }).catch((e) => {
                   console.warn("Audio playback error, using synth fallback:", e);
@@ -1064,6 +1374,11 @@
   function prevTrack() {
     if (audioPlayer && audioPlayer.currentTime > 3) {
       audioPlayer.currentTime = 0;
+      targetSavedTime = 0;
+      try {
+        localStorage.setItem('love_surprise_track_time', '0');
+      } catch (e) {}
+      savePlaybackState();
     } else {
       const prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
       selectTrack(prevIndex, true);
@@ -1074,11 +1389,24 @@
     isMusicPlaying = true;
     hasAutoStarted = true;
 
+    // Apply saved seek position if resuming on reload
+    if (!isPlaybackPositionRestored) {
+      seekToSavedTime();
+    }
+
+    savePlaybackState();
+
     // Attempt HTML5 audio play
     if (audioPlayer && audioPlayer.src) {
       const playPromise = audioPlayer.play();
       if (playPromise !== undefined) {
-        playPromise.catch((err) => {
+        playPromise.then(() => {
+          if (!isPlaybackPositionRestored) {
+            seekToSavedTime();
+          }
+          savePlaybackState();
+          updateTrackUI();
+        }).catch((err) => {
           console.warn("HTML5 audio playback restricted or missing, falling back to Web Audio synth:", err);
           startSynthRomanticMelody();
         });
@@ -1092,6 +1420,7 @@
 
   function stopMusic() {
     isMusicPlaying = false;
+    savePlaybackState();
     if (audioPlayer) {
       audioPlayer.pause();
     }
@@ -1436,11 +1765,25 @@
 
     // Love Notes Controls
     if (floatingNoteBtn) {
-      floatingNoteBtn.addEventListener('click', openNoteModal);
+      floatingNoteBtn.addEventListener('click', () => openNoteModal('floating'));
     }
     const heroNoteBtn = document.getElementById('hero-note-btn');
     if (heroNoteBtn) {
-      heroNoteBtn.addEventListener('click', openNoteModal);
+      heroNoteBtn.addEventListener('click', () => openNoteModal('cumlaude'));
+    }
+    const envelopeSealBtn = document.getElementById('envelope-seal-btn');
+    if (envelopeSealBtn) {
+      envelopeSealBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerEnvelopeOpening();
+      });
+    }
+    const envelopeOuter = document.getElementById('envelope-outer');
+    if (envelopeOuter) {
+      envelopeOuter.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerEnvelopeOpening();
+      });
     }
     if (noteNextBtn) {
       noteNextBtn.addEventListener('click', () => {
@@ -1481,6 +1824,16 @@
           nextModalItem();
         } else if (e.key === 'ArrowLeft') {
           prevModalItem();
+        }
+      }
+    });
+
+    // Prevent sticky active/focus states on buttons after mouse click or tap
+    document.addEventListener('mouseup', (e) => {
+      if (e.target && e.target.closest) {
+        const btn = e.target.closest('button, .btn-primary, .btn-secondary, a.btn-primary');
+        if (btn && typeof btn.blur === 'function') {
+          btn.blur();
         }
       }
     });
