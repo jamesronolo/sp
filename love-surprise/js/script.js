@@ -1747,7 +1747,13 @@
     window.addEventListener('pagehide', savePlaybackState);
 
     // AUTOMATIC PLAY ON OPEN / RESUME:
-    // Attempt playback immediately when the site opens
+    // Only play once the entire website is open (never during the puzzle/question flash screen)
+    const isPuzzleLocked = () => {
+      return !document.documentElement.classList.contains('puzzle-already-unlocked') &&
+             sessionStorage.getItem('love_surprise_puzzle_unlocked') !== 'true' &&
+             !!document.getElementById('puzzle-overlay');
+    };
+
     const tryAutoPlayImmediately = () => {
       if (audioPlayer && audioPlayer.src && shouldAutoResume) {
         // Attempt immediate playback
@@ -1765,6 +1771,9 @@
             updateTrackUI();
 
             const triggerAutoplayOnGesture = (e) => {
+              // Ignore any gesture that occurs while the puzzle is still locked
+              if (isPuzzleLocked()) return;
+
               const isVideoTarget = e && e.target && e.target.closest && (
                 e.target.closest('[data-type="video"]') || 
                 e.target.closest('video')
@@ -1789,7 +1798,18 @@
       }
     };
 
-    tryAutoPlayImmediately();
+    // Listen for when she answers "Yes" to officially open the entire website
+    window.addEventListener('puzzleUnlockedStartMusic', () => {
+      seekToSavedTime();
+      startMusic();
+    }, { once: true });
+
+    if (isPuzzleLocked()) {
+      // Do not play music during the puzzle or question modal
+      console.log("Puzzle active: waiting for entire website to unlock before playing music");
+    } else {
+      tryAutoPlayImmediately();
+    }
   }
 
   function formatTime(sec) {
@@ -4850,7 +4870,27 @@
 
     // Initialize history badge on page load
     loadHistoryFromStorage();
+
+    // Preserve scroll position on refresh if already unlocked
+    const isUnlocked = document.documentElement.classList.contains('puzzle-already-unlocked') ||
+                       sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true';
+    if (isUnlocked) {
+      const savedPos = sessionStorage.getItem('love_surprise_scroll_pos');
+      if (savedPos !== null && parseInt(savedPos, 10) > 0) {
+        setTimeout(() => {
+          window.scrollTo({ top: parseInt(savedPos, 10), behavior: 'instant' });
+        }, 60);
+      }
+    }
   }
+
+  // Save scroll position for refresh restoration
+  window.addEventListener('scroll', () => {
+    if (sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
+        document.documentElement.classList.contains('puzzle-already-unlocked')) {
+      sessionStorage.setItem('love_surprise_scroll_pos', window.scrollY);
+    }
+  }, { passive: true });
 
   // Initialize once DOM is ready
   if (document.readyState === 'loading') {
