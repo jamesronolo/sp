@@ -926,6 +926,40 @@ button:focus:not(:focus-visible) {
   margin-bottom: 0.8rem;
 }
 
+/* Typewriter Animation in Gallery Section Title */
+.typewriter-container {
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+  white-space: nowrap;
+}
+
+.typewriter-text {
+  background: linear-gradient(135deg, #ffffff 0%, #ffccd5 40%, var(--accent-rose-soft) 75%, var(--accent-rose-bright) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: inherit;
+  font-weight: 700;
+  filter: drop-shadow(0 0 16px rgba(255, 117, 143, 0.45));
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  color: var(--accent-rose-bright);
+  -webkit-text-fill-color: var(--accent-rose-bright);
+  font-weight: 300;
+  margin-left: 2px;
+  animation: typewriterCursorBlink 0.9s infinite;
+  user-select: none;
+}
+
+@keyframes typewriterCursorBlink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 .section-subtitle {
   color: var(--text-muted);
   font-size: 1rem;
@@ -937,27 +971,35 @@ button:focus:not(:focus-visible) {
 .gallery-filters {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 2.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 2.2rem;
+  max-width: 100%;
 }
 
 .filter-btn {
-  padding: 8px 20px;
+  padding: 7px 16px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-glass);
-  font-size: 0.875rem;
+  font-size: 0.84rem;
   color: var(--text-muted);
   font-weight: 500;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+  line-height: 1.25;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   transform: none !important;
   -webkit-tap-highlight-color: transparent;
   outline: none;
+  cursor: pointer;
 }
 
 .filter-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.22);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transform: none !important;
 }
 
@@ -971,7 +1013,7 @@ button:focus:not(:focus-visible) {
   background: var(--accent-rose);
   border-color: var(--accent-rose);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(255, 117, 143, 0.4);
+  box-shadow: 0 2px 10px rgba(255, 117, 143, 0.35);
   transform: none !important;
 }
 
@@ -982,15 +1024,67 @@ button:focus:not(:focus-visible) {
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 16px rgba(255, 77, 109, 0.25);
+  gap: 5px;
+  box-shadow: 0 2px 10px rgba(255, 77, 109, 0.2);
 }
 
 .filter-btn.pbooth-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 117, 143, 0.35), rgba(201, 24, 74, 0.48));
+  background: linear-gradient(135deg, rgba(255, 117, 143, 0.3), rgba(201, 24, 74, 0.42));
   border-color: var(--accent-rose);
-  box-shadow: 0 6px 22px rgba(255, 77, 109, 0.45);
+  box-shadow: 0 3px 12px rgba(255, 77, 109, 0.35);
   color: #fff;
+}
+
+/* Gallery Realtime Upload Toolbar */
+.gallery-upload-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: -1.2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.gallery-upload-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 117, 143, 0.35);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gallery-upload-btn:hover {
+  background: rgba(255, 117, 143, 0.22);
+  border-color: var(--accent-rose);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 117, 143, 0.35);
+}
+
+.gallery-upload-btn:active {
+  transform: translateY(1px);
+}
+
+.gallery-upload-btn .upload-btn-svg {
+  display: block;
+  stroke: var(--accent-rose-soft);
+  transition: transform 0.2s ease;
+}
+
+.gallery-upload-btn:hover .upload-btn-svg {
+  transform: scale(1.15);
+  stroke: #fff;
 }
 
 /* Gallery Grid */
@@ -1039,6 +1133,11 @@ button:focus:not(:focus-visible) {
 .gallery-item:hover .gallery-media-thumb video {
   filter: brightness(1.08);
   transform: none !important;
+}
+
+/* Permanent Delete Button - hidden on grid cards as requested by user ("sagbot tan-awon") */
+.gallery-item-delete-btn {
+  display: none !important;
 }
 
 .gallery-badge {
@@ -1209,6 +1308,35 @@ button:focus:not(:focus-visible) {
   padding: 4px 10px;
   border-radius: var(--radius-full);
   white-space: nowrap;
+}
+
+.modal-caption-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-lightbox-delete {
+  background: rgba(255, 77, 109, 0.15);
+  border: 1px solid rgba(255, 77, 109, 0.4);
+  color: #ff758f;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-lightbox-delete:hover {
+  background: #ff4d6d;
+  border-color: #ff4d6d;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 77, 109, 0.5);
 }
 
 /* --------------------------------------------------------------------------
@@ -1645,6 +1773,20 @@ button:focus:not(:focus-visible) {
     gap: 12px;
   }
 
+  .gallery-filters {
+    gap: 7px;
+    margin-bottom: 1.8rem;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    font-size: 0.78rem;
+  }
+
+  .filter-btn.pbooth-btn {
+    padding: 6px 14px;
+  }
+
   .floating-notes-btn {
     bottom: 20px;
     right: 20px;
@@ -1847,6 +1989,37 @@ button:focus:not(:focus-visible) {
   .modal-caption-bar {
     padding: 10px 14px;
   }
+
+  .gallery-filters {
+    gap: 6px;
+    margin-bottom: 1.4rem;
+    padding: 0 4px;
+  }
+
+  .filter-btn {
+    padding: 5px 11px;
+    font-size: 0.73rem;
+  }
+
+  .filter-btn.pbooth-btn {
+    padding: 5px 11px;
+    gap: 4px;
+  }
+
+  .filter-btn.pbooth-btn .pbooth-btn-icon {
+    font-size: 0.8rem;
+  }
+
+  .gallery-upload-toolbar {
+    margin-top: -0.9rem;
+    margin-bottom: 1.6rem;
+    gap: 8px;
+  }
+
+  .gallery-upload-btn {
+    padding: 5px 12px;
+    font-size: 0.72rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1879,6 +2052,33 @@ button:focus:not(:focus-visible) {
   .note-modal-card {
     padding: 2rem 1.2rem;
   }
+
+  .gallery-filters {
+    gap: 5px;
+    margin-bottom: 1.2rem;
+  }
+
+  .filter-btn {
+    padding: 4px 9px;
+    font-size: 0.70rem;
+    border-radius: 16px;
+  }
+
+  .filter-btn.pbooth-btn {
+    padding: 4px 9px;
+    gap: 3px;
+  }
+
+  .gallery-upload-toolbar {
+    margin-top: -0.8rem;
+    margin-bottom: 1.4rem;
+    gap: 6px;
+  }
+
+  .gallery-upload-btn {
+    padding: 4px 10px;
+    font-size: 0.69rem;
+  }
 }
 
 @media (max-width: 360px) {
@@ -1898,6 +2098,41 @@ button:focus:not(:focus-visible) {
   .volume-slider-group {
     margin-left: 0;
     margin-top: 4px;
+  }
+
+  .gallery-filters {
+    gap: 4px;
+    margin-bottom: 1rem;
+  }
+
+  .filter-btn {
+    padding: 4px 7px;
+    font-size: 0.66rem;
+  }
+
+  .filter-btn.pbooth-btn {
+    padding: 4px 7px;
+  }
+}
+
+@media (hover: none) {
+  .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-glass);
+    color: var(--text-muted);
+    box-shadow: none;
+  }
+  .filter-btn.active:hover {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(255, 117, 143, 0.35);
+  }
+  .filter-btn.pbooth-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 117, 143, 0.18), rgba(201, 24, 74, 0.28));
+    border-color: rgba(255, 117, 143, 0.45);
+    box-shadow: 0 2px 10px rgba(255, 77, 109, 0.2);
+    color: #fff;
   }
 }
 
@@ -2896,21 +3131,50 @@ button:focus:not(:focus-visible) {
   transition: none;
 }
 
-/* Visual Shots Progress Tracker (Tiny, Clean, Distraction-Free Dots) */
-.pbooth-shots-tracker {
+.pbooth-tracker-wrap {
   position: absolute;
   top: 10px;
   right: 10px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   z-index: 15;
-  background: rgba(14, 8, 20, 0.6);
+}
+
+/* Visual Shots Progress Tracker (Tiny, Clean, Distraction-Free Dots) */
+.pbooth-shots-tracker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(14, 8, 20, 0.65);
   backdrop-filter: blur(8px);
   padding: 3px 6px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.pbooth-reset-shots-btn {
+  background: rgba(14, 8, 20, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 77, 109, 0.4);
+  color: #ff758f;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pbooth-reset-shots-btn:hover {
+  background: rgba(255, 77, 109, 0.35);
+  color: #fff;
+  transform: rotate(-45deg);
 }
 
 .tracker-slot {
@@ -2966,6 +3230,47 @@ button:focus:not(:focus-visible) {
   gap: 5px;
 }
 
+/* Floating Flip Camera Button (Quick Toggle for Mobile) */
+.pbooth-floating-flip-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 16;
+  background: rgba(14, 8, 20, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pbooth-floating-flip-btn:hover {
+  background: rgba(255, 77, 109, 0.35);
+  border-color: var(--accent-rose);
+  transform: scale(1.05);
+}
+
+.pbooth-floating-flip-btn:active .flip-icon {
+  transform: rotate(180deg);
+}
+
+.pbooth-floating-flip-btn .flip-badge {
+  font-size: 0.6rem;
+  letter-spacing: 0.8px;
+  color: var(--accent-rose-soft);
+  text-transform: uppercase;
+}
+
 /* Camera Fallback */
 .pbooth-camera-fallback {
   position: absolute;
@@ -3006,84 +3311,104 @@ button:focus:not(:focus-visible) {
   font-size: 0.75rem !important;
 }
 
-/* Controls Bar */
+/* Controls Bar (Balanced Studio Shutter Layout) */
 .pbooth-controls-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 25px;
-  padding: 0.4rem 0;
+  gap: 32px;
+  padding: 0.5rem 0.5rem;
+  max-width: 100%;
+  width: 100%;
 }
 
 .pbooth-aux-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 54px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .pbooth-aux-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
   border-color: var(--accent-rose);
+  transform: scale(1.08);
+}
+
+.pbooth-aux-btn:active {
+  transform: scale(0.92);
 }
 
 .pbooth-aux-btn.active {
-  background: rgba(255, 117, 143, 0.2);
+  background: rgba(255, 117, 143, 0.22);
   border-color: var(--accent-rose);
   color: var(--accent-rose-soft);
+  box-shadow: 0 0 14px rgba(255, 117, 143, 0.35);
 }
 
-.aux-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 .aux-emoji {
-  font-size: 1rem;
+  font-size: 1.35rem;
   line-height: 1;
 }
 
-/* Big Snap Photo Button */
+.aux-svg-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pbooth-aux-btn:hover .aux-svg-icon {
+  transform: scale(1.12);
+}
+
+/* Big Snap Photo Shutter Button (Authentic Shutter Design, No Emoji) */
 .pbooth-snap-btn {
   position: relative;
-  width: 66px;
-  height: 66px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  border: none;
+  border: 3.5px solid rgba(255, 255, 255, 0.95);
   background: linear-gradient(135deg, var(--accent-rose-bright), #c9184a);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(255, 77, 109, 0.5);
+  box-shadow: 0 8px 24px rgba(255, 77, 109, 0.55), inset 0 0 8px rgba(0, 0, 0, 0.2);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
 .pbooth-snap-btn:hover {
-  transform: scale(1.06);
-  box-shadow: 0 10px 30px rgba(255, 77, 109, 0.7);
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(255, 77, 109, 0.75);
 }
 
 .pbooth-snap-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.93);
 }
 
 .snap-btn-ring {
   position: absolute;
-  inset: -5px;
+  inset: -6px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 117, 143, 0.5);
+  border: 2px solid rgba(255, 117, 143, 0.55);
   animation: snapPulse 2s infinite ease-in-out;
 }
 
@@ -3093,24 +3418,37 @@ button:focus:not(:focus-visible) {
 }
 
 .snap-btn-inner {
-  font-size: 1.6rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.85);
+  transition: transform 0.12s ease, background 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.snap-btn-counter {
-  position: absolute;
-  bottom: -24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(14, 8, 18, 0.9);
-  border: 1px solid rgba(255, 117, 143, 0.5);
-  border-radius: var(--radius-full);
-  padding: 2px 10px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #fff;
-  white-space: nowrap;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+.pbooth-snap-btn:hover .snap-btn-inner {
+  transform: scale(0.94);
+  background: #fff0f3;
+}
+
+.pbooth-snap-btn:active .snap-btn-inner {
+  transform: scale(0.85);
+  background: #ffccd5;
+}
+
+.snap-btn-camera-svg {
+  display: block;
+  width: 25px;
+  height: 25px;
+  stroke: #c9184a;
+  transition: transform 0.15s ease;
+}
+
+.pbooth-snap-btn:hover .snap-btn-camera-svg {
+  transform: scale(1.08);
 }
 
 /* Result Stage */
@@ -3125,6 +3463,32 @@ button:focus:not(:focus-visible) {
 @keyframes fadeInResult {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Save vs Retake Prompt */
+.pbooth-result-prompt {
+  text-align: center;
+  margin-bottom: 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 117, 143, 0.25);
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.result-prompt-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.result-prompt-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
 .pbooth-rendered-card {
@@ -3145,9 +3509,62 @@ button:focus:not(:focus-visible) {
 
 .pbooth-result-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+  max-width: 440px;
+  width: 100%;
+}
+
+.pbooth-result-actions button {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 130px;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-save-action {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+  font-weight: 600;
+}
+
+.btn-save-action:hover {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5) !important;
+}
+
+.btn-save-action.is-saved {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border: 1px solid #10b981 !important;
+  color: #34d399 !important;
+  box-shadow: none !important;
+  cursor: default;
+}
+
+.btn-retake-action {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-retake-action:hover {
+  background: rgba(255, 77, 109, 0.22);
+  border-color: var(--accent-rose);
+  color: #ff758f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(255, 77, 109, 0.3);
 }
 
 /* Snaps History Panel */
@@ -3255,15 +3672,31 @@ button:focus:not(:focus-visible) {
   color: var(--accent-gold);
 }
 
-/* Permanent Delete Icon Button */
-.btn-history-delete {
-  color: rgba(255, 100, 100, 0.85);
+/* Permanent Delete Icon Button (Icon Only) */
+.btn-history-delete,
+.btn-delete-icon-only {
+  color: rgba(255, 100, 100, 0.9);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  background: rgba(255, 77, 109, 0.12);
+  border: 1px solid rgba(255, 77, 109, 0.3);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
-.btn-history-delete:hover {
-  background: rgba(255, 77, 109, 0.2);
-  color: #ff4d6d;
-  box-shadow: 0 0 10px rgba(255, 77, 109, 0.3);
+.btn-history-delete:hover,
+.btn-delete-icon-only:hover {
+  background: rgba(255, 77, 109, 0.3);
+  border-color: #ff4d6d;
+  color: #fff;
+  transform: scale(1.12);
+  box-shadow: 0 0 14px rgba(255, 77, 109, 0.5);
 }
 
 /* Empty State */
@@ -3736,16 +4169,16 @@ button:focus:not(:focus-visible) {
 /* Mobile Responsiveness for Photobooth */
 @media (max-width: 600px) {
   .pbooth-modal-card {
-    padding: 1.1rem 0.9rem 1.4rem;
+    padding: 1.1rem 0.85rem 1.3rem;
     width: 96%;
     max-height: 94vh;
   }
   .pbooth-title {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
   }
   .pbooth-toolbar {
-    padding: 0.6rem 0.8rem;
-    gap: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    gap: 0.4rem;
   }
   .pbooth-tool-label {
     min-width: 100%;
@@ -3758,12 +4191,70 @@ button:focus:not(:focus-visible) {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
-  .pbooth-snap-btn {
-    width: 58px;
-    height: 58px;
+  .pbooth-controls-bar {
+    gap: 20px;
+    padding: 0.3rem 0;
   }
+  .pbooth-aux-btn {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border-radius: 14px;
+  }
+  .aux-emoji {
+    font-size: 1.2rem;
+  }
+  .pbooth-snap-btn {
+    width: 62px;
+    height: 62px;
+  }
+  .snap-btn-inner {
+    width: 44px;
+    height: 44px;
+  }
+  .snap-btn-camera-svg {
+    width: 22px;
+    height: 22px;
+  }
+  .aux-svg-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .pbooth-result-actions button {
+    min-width: 110px;
+    font-size: 0.78rem;
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 380px) {
   .pbooth-controls-bar {
     gap: 16px;
+  }
+  .pbooth-aux-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 12px;
+  }
+  .aux-emoji {
+    font-size: 1.1rem;
+  }
+  .aux-svg-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .pbooth-snap-btn {
+    width: 54px;
+    height: 54px;
+  }
+  .snap-btn-inner {
+    width: 38px;
+    height: 38px;
+  }
+  .snap-btn-camera-svg {
+    width: 19px;
+    height: 19px;
   }
 }
 

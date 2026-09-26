@@ -152,7 +152,9 @@
     <section class="gallery-section" id="gallery-section">
       <div class="section-header">
         <span class="section-tag">Our Keepsakes</span>
-        <h2 class="section-title">Treasured Moments</h2>
+        <h2 class="section-title" aria-label="Treasured Moments">
+          Treasured <span class="typewriter-container"><span class="typewriter-text" id="gallery-typewriter-text">Moments</span><span class="typewriter-cursor" aria-hidden="true">|</span></span>
+        </h2>
         <p class="section-subtitle">
           Every photo and video is a frame of pure happiness. Click any keepsake to enlarge full-screen.
         </p>
@@ -167,12 +169,38 @@
             <span class="pbooth-btn-text">pbooth</span>
           </button>
         </div>
+
+        <!-- Realtime Upload Toolbar for Photos & Videos -->
+        <div class="gallery-upload-toolbar" aria-label="Upload photo or video to gallery">
+          <button type="button" class="gallery-upload-btn btn-upload-photo" id="gallery-upload-photo-btn" title="Upload your own photo in realtime (.jpg, .png, .webp)">
+            <svg class="upload-btn-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>+ Upload Photo</span>
+          </button>
+          <button type="button" class="gallery-upload-btn btn-upload-video" id="gallery-upload-video-btn" title="Upload your own video in realtime (.mp4, .webm, .mov)">
+            <svg class="upload-btn-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="4" width="15" height="16" rx="2"/>
+              <path d="M17 9l5-3v12l-5-3z"/>
+            </svg>
+            <span>+ Upload Video</span>
+          </button>
+          <input type="file" id="gallery-photo-input" accept="image/*" multiple style="display: none;">
+          <input type="file" id="gallery-video-input" accept="video/*" multiple style="display: none;">
+        </div>
       </div>
 
       <!-- Dynamic Gallery Grid -->
       <div class="gallery-grid" id="gallery-grid" aria-label="Keepsake collection"></div>
     </section>
   </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p class="footer-love-msg">Made with endless love, forever and always 💛</p>
+    <p class="footer-copy">Press Escape to close any keepsake view. Tap any falling photo to pause the moment.</p>
+  </footer>
 
   <!-- Lightbox Modal for Large Media Preview (Freezes rain while open) -->
   <div id="media-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Enlarged Preview">
@@ -185,7 +213,18 @@
 
       <div class="modal-caption-bar">
         <div id="modal-caption" class="modal-caption-text">Cherished Moment</div>
-        <div id="modal-counter" class="modal-counter-badge">1 of 16</div>
+        <div class="modal-caption-actions">
+          <button type="button" class="btn-lightbox-delete" id="modal-delete-btn" title="Delete this keepsake permanently" aria-label="Delete this keepsake permanently">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 6h18"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <line x1="10" y1="11" x2="10" y2="17"/>
+              <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+            <span>Delete</span>
+          </button>
+          <div id="modal-counter" class="modal-counter-badge">1 of 16</div>
+        </div>
       </div>
     </div>
   </div>
@@ -325,7 +364,6 @@
       <!-- Photobooth Header -->
       <div class="pbooth-header">
         <div class="pbooth-title-group">
-          <span class="pbooth-badge">✨ Sweet Memories Studio</span>
           <h2 class="pbooth-title">Romantic Photobooth</h2>
         </div>
 
@@ -425,14 +463,30 @@
             <video id="pbooth-video" autoplay playsinline webkit-playsinline muted></video>
             <canvas id="pbooth-work-canvas" style="display: none;"></canvas>
 
+            <!-- Floating Flip Camera Button (Quick Mobile & Desktop Switch) -->
+            <button type="button" class="pbooth-floating-flip-btn" id="pbooth-floating-flip-btn" title="Flip Camera (Front / Back)" aria-label="Flip Camera">
+              <svg class="flip-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 21h5v-5"/>
+              </svg>
+              <span class="flip-badge" id="pbooth-flip-badge">FRONT</span>
+            </button>
+
             <!-- Shutter Flash Effect -->
             <div class="pbooth-flash-overlay" id="pbooth-flash"></div>
 
-            <!-- Visual Shots Progress Tracker (Clean, tiny dot indicators) -->
-            <div class="pbooth-shots-tracker" id="pbooth-shots-tracker" aria-label="Shots taken progress">
-              <div class="tracker-slot active">1</div>
-              <div class="tracker-slot">2</div>
-              <div class="tracker-slot">3</div>
+            <!-- Visual Shots Progress Tracker & Reset Button -->
+            <div class="pbooth-tracker-wrap">
+              <div class="pbooth-shots-tracker" id="pbooth-shots-tracker" aria-label="Shots taken progress">
+                <div class="tracker-slot active">1</div>
+                <div class="tracker-slot">2</div>
+                <div class="tracker-slot">3</div>
+              </div>
+              <button type="button" class="pbooth-reset-shots-btn" id="pbooth-reset-shots-btn" title="Reset Shots & Start Over" style="display: none;" aria-label="Reset Shots">
+                <span>↺</span>
+              </button>
             </div>
 
             <!-- Live Updated Day & Date Stamp Pill -->
@@ -455,46 +509,66 @@
 
           <!-- Result Preview Stage (Shown when photos are snapped) -->
           <div class="pbooth-result-stage" id="pbooth-result-stage" style="display: none;">
+            <!-- Save vs Retake Decision Prompt -->
+            <div class="pbooth-result-prompt">
+              <span class="result-prompt-title">📸 How does it look?</span>
+              <span class="result-prompt-sub">Save to your Snaps History, or Retake to try again!</span>
+            </div>
+
             <div class="pbooth-rendered-card" id="pbooth-rendered-card">
               <img id="pbooth-result-img" alt="Captured Photobooth keepsake" class="pbooth-final-image">
             </div>
 
             <div class="pbooth-result-actions">
-              <button type="button" class="btn-primary" id="pbooth-download-btn">
-                <span>⬇️</span>
-                <span>Download Photo</span>
+              <button type="button" class="btn-primary btn-save-action" id="pbooth-save-btn">
+                <span>💾</span>
+                <span id="pbooth-save-btn-text">Save Photo</span>
               </button>
-              <button type="button" class="btn-secondary" id="pbooth-retake-btn">
+              <button type="button" class="btn-secondary btn-retake-action" id="pbooth-retake-btn">
                 <span>🔄</span>
-                <span>Retake</span>
+                <span>Take Again (Retake)</span>
+              </button>
+              <button type="button" class="btn-secondary" id="pbooth-download-btn">
+                <span>⬇️</span>
+                <span>Download</span>
               </button>
               <button type="button" class="btn-secondary" id="pbooth-view-history-shortcut-btn">
                 <span>🎞️</span>
-                <span>View in Snaps</span>
+                <span>Snaps History</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Bottom Controls Bar (Flip button removed; Click whenever ready) -->
+        <!-- Bottom Controls Bar (Balanced 3-Button Studio Controls: Left Flip, Center Shutter, Right Mirror) -->
         <div class="pbooth-controls-bar" id="pbooth-controls-bar">
-          <!-- Reset Shots in progress button -->
-          <button type="button" class="pbooth-aux-btn" id="pbooth-reset-shots-btn" title="Reset Shots & Start Over" style="visibility: hidden;">
-            <span class="aux-emoji">🔄</span>
-            <span class="aux-label">Reset</span>
+          <!-- Left: Flip Camera Button (Clean SVG Vector Icon Only) -->
+          <button type="button" class="pbooth-aux-btn" id="pbooth-flip-cam-btn" title="Flip Camera (Front / Back)" aria-label="Flip Camera">
+            <svg class="aux-svg-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 21h5v-5"/>
+            </svg>
           </button>
 
-          <!-- Main Manual Shutter Snap Button -->
+          <!-- Center: Main Camera Shutter Snap Button (Icon-Only Shutter with SVG Camera, No Text) -->
           <button type="button" class="pbooth-snap-btn" id="pbooth-snap-btn" aria-label="Take picture" title="Click to take picture whenever you are ready">
             <span class="snap-btn-ring"></span>
-            <span class="snap-btn-inner">📸</span>
-            <span class="snap-btn-counter" id="pbooth-snap-btn-counter">Shot 1/3</span>
+            <span class="snap-btn-inner">
+              <svg class="snap-btn-camera-svg" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#c9184a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </span>
           </button>
 
-          <!-- Mirror Toggle Button -->
-          <button type="button" class="pbooth-aux-btn active" id="pbooth-mirror-btn" title="Toggle Mirror Selfie Mode">
-            <span class="aux-emoji">🪞</span>
-            <span class="aux-label">Mirror</span>
+          <!-- Right: Mirror Toggle Button (Clean SVG Mirror Icon Only) -->
+          <button type="button" class="pbooth-aux-btn active" id="pbooth-mirror-btn" title="Toggle Mirror Selfie Mode" aria-label="Toggle Mirror Mode">
+            <svg class="aux-svg-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <ellipse cx="12" cy="12" rx="7" ry="9"/>
+              <path d="M9.5 8c1.8-0.8 3.2 0.2 3.8 1.8"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -779,6 +853,21 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery Media Delete Confirmation Modal Dialog -->
+  <div id="gallery-delete-modal" class="modal-overlay pbooth-delete-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Delete Keepsake Confirmation">
+    <div class="pbooth-delete-card">
+      <div class="delete-icon-circle">🗑️</div>
+      <h3 class="delete-title" id="gallery-delete-title">Delete Keepsake?</h3>
+      <p class="delete-desc" id="gallery-delete-desc">
+        This keepsake will be deleted permanently from your gallery and cannot be recovered.
+      </p>
+      <div class="delete-actions">
+        <button type="button" class="btn-delete-confirm" id="gallery-delete-confirm-btn">Yes, Delete Permanently</button>
+        <button type="button" class="btn-delete-cancel" id="gallery-delete-cancel-btn">Cancel</button>
       </div>
     </div>
   </div>
