@@ -456,3 +456,31 @@ html.puzzle-already-unlocked #puzzle-question-modal {
   }
 }
 
+/* ── Developer credit (bottom right) ──────────────────────────────────────── */
+.puzzle-developer-credit {
+  position: fixed;
+  bottom: 18px;
+  right: 22px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: rgba(200, 185, 203, 0.45);
+  z-index: 10;
+  pointer-events: auto;
+  user-select: none;
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.puzzle-developer-credit:hover {
+  color: rgba(255, 117, 143, 0.9);
+}
+
+@media (max-width: 480px) {
+  .puzzle-developer-credit {
+    font-size: 0.66rem;
+    bottom: 12px;
+    right: 14px;
+  }
+}
+
+
