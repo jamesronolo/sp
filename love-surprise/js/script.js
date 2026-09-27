@@ -671,23 +671,42 @@
     });
   }
 
-  async function saveGalleryItemToIndexedDB(item, fileBlob) {
-    try {
-      const db = await openGalleryDB();
-      if (!db) return;
-      const tx = db.transaction(GALLERY_STORE_NAME, 'readwrite');
-      const store = tx.objectStore(GALLERY_STORE_NAME);
-      store.put({
-        id: item.id,
-        type: item.type,
-        caption: item.caption,
-        filename: item.filename || '',
-        blob: fileBlob,
-        timestamp: item.timestamp || Date.now()
-      });
-    } catch (e) {
-      console.warn('Gallery IndexedDB save error:', e);
-    }
+  function saveGalleryItemToIndexedDB(item, fileBlob) {
+    return new Promise(async (resolve) => {
+      try {
+        const db = await openGalleryDB();
+        if (!db) { resolve(false); return; }
+        const tx = db.transaction(GALLERY_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(GALLERY_STORE_NAME);
+
+        let safeBlob = fileBlob;
+        try {
+          if (fileBlob && typeof fileBlob.slice === 'function') {
+            safeBlob = fileBlob.slice(0, fileBlob.size, fileBlob.type);
+          }
+        } catch (err) {
+          safeBlob = fileBlob;
+        }
+
+        const record = {
+          id: item.id,
+          type: item.type,
+          caption: item.caption,
+          filename: item.filename || '',
+          blob: safeBlob,
+          timestamp: item.timestamp || Date.now()
+        };
+
+        const req = store.put(record);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn('Gallery IndexedDB save error:', e);
+        resolve(false);
+      }
+    });
   }
 
   async function loadGalleryItemsFromIndexedDB() {
@@ -700,10 +719,17 @@
         const req = store.getAll();
         req.onsuccess = () => {
           const results = req.result || [];
+          // Sort newest uploads first
+          results.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
           const items = results.map(item => {
             let src = '';
             if (item.blob) {
-              src = URL.createObjectURL(item.blob);
+              try {
+                src = URL.createObjectURL(item.blob);
+              } catch (e) {
+                console.warn('Blob URL create error:', e);
+              }
             }
             return {
               id: item.id,
@@ -715,7 +741,7 @@
               timestamp: item.timestamp || Date.now(),
               blob: item.blob
             };
-          });
+          }).filter(it => Boolean(it.src));
           resolve(items);
         };
         req.onerror = () => resolve([]);
@@ -726,16 +752,23 @@
     }
   }
 
-  async function deleteGalleryItemFromIndexedDB(id) {
-    try {
-      const db = await openGalleryDB();
-      if (!db) return;
-      const tx = db.transaction(GALLERY_STORE_NAME, 'readwrite');
-      const store = tx.objectStore(GALLERY_STORE_NAME);
-      store.delete(id);
-    } catch (e) {
-      console.warn('Gallery IndexedDB delete error:', e);
-    }
+  function deleteGalleryItemFromIndexedDB(id) {
+    return new Promise(async (resolve) => {
+      try {
+        const db = await openGalleryDB();
+        if (!db) { resolve(false); return; }
+        const tx = db.transaction(GALLERY_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(GALLERY_STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        console.warn('Gallery IndexedDB delete error:', e);
+        resolve(false);
+      }
+    });
   }
 
   function getDeletedDefaultKeys() {
@@ -863,97 +896,196 @@
     });
   }
 
-  function setupGalleryUploads() {
-    // 1. Upload Photo button
-    if (galleryUploadPhotoBtn && galleryPhotoInput) {
-      galleryUploadPhotoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        galleryPhotoInput.click();
-      });
+  /* ==========================================================================
+     AUTOMATIC ROMANTIC CAPTIONS LIBRARY (For uploaded photos & videos)
+     ========================================================================== */
+  const ROMANTIC_PHOTO_CAPTIONS = [
+    "You make every ordinary moment feel extraordinary ✨",
+    "My favorite view in the entire world will always be you 💖",
+    "A sweet smile that brightens my whole universe 🌸",
+    "Holding onto this precious memory forever and always 💕",
+    "Every single second with you is a gift I cherish 🌷",
+    "The prettiest, sweetest soul I have ever known ✨",
+    "You and me, making memories to last a lifetime 💫",
+    "My heart will always find its way back to you 💖",
+    "Forever grateful for your laughter, warmth, and love ☀️",
+    "Can't help but fall in love with you all over again 💕",
+    "A beautiful glimpse of our endless love story 📸",
+    "With you, every day feels like a dream come true ✨",
+    "The reason behind all my happiest, warmest smiles 🌹",
+    "Simply irreplaceable and precious in every single way 💖",
+    "Capturing the magic and pure bliss of us together 💫",
+    "Forever my favorite person, today and for all days 🌸",
+    "In your gentle eyes, I found my peaceful home 💖",
+    "Proof that fairy tales and true love really do exist ✨",
+    "Endlessly proud of you, endlessly in love with you 💕",
+    "My sweetest forever, yesterday, today, and always 🍯💖",
+    "A radiant snapshot of pure happiness with you 🌟",
+    "No camera could ever fully capture how gorgeous you are 🌷",
+    "Your happiness is the most beautiful thing in the world 💖",
+    "Just looking at you makes my day instantly brighter ✨",
+    "The love of my life, captured in a perfect frame 📸💕"
+  ];
 
+  const ROMANTIC_VIDEO_CAPTIONS = [
+    "A moving memory full of genuine joy and laughter 🎥✨",
+    "Reliving our sweetest smiles and candid giggles over and over 💖",
+    "Every heartbeat, every smile, forever saved in my heart 💫",
+    "A priceless, heartwarming glimpse of our happiest days 🌸",
+    "My heart skips a beat every time I watch this video 💕",
+    "Forever replaying this precious moment together ✨",
+    "The sweetest moving frames in our forever love story 🎬💖",
+    "Pure joy, warmth, and laughter captured in motion 🌷",
+    "Unforgettable memories that continue to light up my world 🌟",
+    "Nothing brings me deeper peace than your bright laughter 💖",
+    "Forever my absolute favorite video clip in the world 🎥💕",
+    "A little piece of heaven and happiness with you ✨",
+    "Listening to your laugh is my favorite soundtrack in life 🎵💖",
+    "Every frame proves how deeply blessed I am to have you 🌸",
+    "Our candid love in real motion, treasured forever 🎬💫"
+  ];
+
+  let autoCaptionPhotoIdx = Math.floor(Math.random() * ROMANTIC_PHOTO_CAPTIONS.length);
+  let autoCaptionVideoIdx = Math.floor(Math.random() * ROMANTIC_VIDEO_CAPTIONS.length);
+
+  function getAutoRomanticCaption(type) {
+    if (type === 'video') {
+      const caption = ROMANTIC_VIDEO_CAPTIONS[autoCaptionVideoIdx % ROMANTIC_VIDEO_CAPTIONS.length];
+      autoCaptionVideoIdx++;
+      return caption;
+    } else {
+      const caption = ROMANTIC_PHOTO_CAPTIONS[autoCaptionPhotoIdx % ROMANTIC_PHOTO_CAPTIONS.length];
+      autoCaptionPhotoIdx++;
+      return caption;
+    }
+  }
+
+  function setupGalleryUploads() {
+    // Reset file input values before selection to ensure the 'change' event fires even when selecting the same file
+    if (galleryPhotoInput) {
+      galleryPhotoInput.addEventListener('click', () => {
+        galleryPhotoInput.value = '';
+      });
+    }
+    if (galleryVideoInput) {
+      galleryVideoInput.addEventListener('click', () => {
+        galleryVideoInput.value = '';
+      });
+    }
+
+    // Keyboard accessibility for upload labels/buttons
+    if (galleryUploadPhotoBtn && galleryPhotoInput) {
+      galleryUploadPhotoBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          galleryPhotoInput.click();
+        }
+      });
+    }
+    if (galleryUploadVideoBtn && galleryVideoInput) {
+      galleryUploadVideoBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          galleryVideoInput.click();
+        }
+      });
+    }
+
+    // 1. Photo input change handler (realtime on any device)
+    if (galleryPhotoInput) {
       galleryPhotoInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
-        for (const file of files) {
+        const newItems = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
           const fileUrl = URL.createObjectURL(file);
-          const rawName = file.name.replace(/\.[^/.]+$/, "");
+          const autoCaption = getAutoRomanticCaption('image');
           const newItem = {
-            id: `user-gallery-photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id: `user-gallery-photo-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
             type: 'image',
             src: fileUrl,
-            caption: rawName || 'Our Treasured Photo',
+            caption: autoCaption,
             filename: file.name,
             isUserUploaded: true,
-            timestamp: Date.now()
+            timestamp: Date.now() + i,
+            blob: file
           };
 
-          // 1. Add to front of array in realtime
+          // Add to front of array in realtime
           galleryMedia.unshift(newItem);
+          newItems.push(newItem);
 
-          // 2. Persist in IndexedDB permanently
+          // Persist in IndexedDB permanently (will not disappear on refresh)
           await saveGalleryItemToIndexedDB(newItem, file);
         }
 
         // Switch filter so new photo is immediately visible
         if (currentActiveFilter === 'video') {
-          applyGalleryFilter('image');
+          applyGalleryFilter('all');
         }
 
         // Re-render gallery grid in real time
         renderGalleryCards();
 
-        showSiteToast(files.length > 1 ? `${files.length} Photos uploaded! 📸` : 'Photo uploaded to gallery! 📸', '📸');
+        const toastMsg = newItems.length > 1 
+          ? `${newItems.length} Photos uploaded with automatic captions! 📸💖`
+          : `Photo added: "${newItems[0].caption}" 📸💖`;
+        showSiteToast(toastMsg, '📸');
         galleryPhotoInput.value = '';
       });
     }
 
-    // 2. Upload Video button
-    if (galleryUploadVideoBtn && galleryVideoInput) {
-      galleryUploadVideoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        galleryVideoInput.click();
-      });
-
+    // 2. Video input change handler (realtime on any device)
+    if (galleryVideoInput) {
       galleryVideoInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
-        for (const file of files) {
+        const newItems = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
           const fileUrl = URL.createObjectURL(file);
-          const rawName = file.name.replace(/\.[^/.]+$/, "");
+          const autoCaption = getAutoRomanticCaption('video');
           const newItem = {
-            id: `user-gallery-video-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            id: `user-gallery-video-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
             type: 'video',
             src: fileUrl,
-            caption: rawName || 'Our Treasured Video',
+            caption: autoCaption,
             filename: file.name,
             isUserUploaded: true,
-            timestamp: Date.now()
+            timestamp: Date.now() + i,
+            blob: file
           };
 
-          // 1. Add to front of array in realtime
+          // Add to front of array in realtime
           galleryMedia.unshift(newItem);
+          newItems.push(newItem);
 
-          // 2. Persist in IndexedDB permanently
+          // Persist in IndexedDB permanently (will not disappear on refresh)
           await saveGalleryItemToIndexedDB(newItem, file);
         }
 
         // Switch filter so new video is immediately visible
         if (currentActiveFilter === 'image') {
-          applyGalleryFilter('video');
+          applyGalleryFilter('all');
         }
 
         // Re-render gallery grid in real time
         renderGalleryCards();
 
-        showSiteToast(files.length > 1 ? `${files.length} Videos uploaded! 🎥` : 'Video uploaded to gallery! 🎥', '🎥');
+        const toastMsg = newItems.length > 1
+          ? `${newItems.length} Videos uploaded with automatic captions! 🎥💖`
+          : `Video added: "${newItems[0].caption}" 🎥💖`;
+        showSiteToast(toastMsg, '🎥');
         galleryVideoInput.value = '';
       });
     }
   }
 
   function openGalleryDeleteModal(item, cardEl = null) {
+    if (!item) return;
     galleryItemPendingDelete = item;
     galleryCardPendingDeleteEl = cardEl;
 
@@ -985,7 +1117,7 @@
     const target = galleryItemPendingDelete;
     const isVideo = target.type === 'video';
 
-    // 1. Delete from persistence
+    // 1. Delete permanently from browser persistence
     if (target.isUserUploaded) {
       await deleteGalleryItemFromIndexedDB(target.id);
     } else {
@@ -998,21 +1130,23 @@
       galleryMedia.splice(targetIdx, 1);
     }
 
-    // 3. Remove DOM element in real-time
-    const targetKey = target.id || target.src;
-    const cardEl = galleryCardPendingDeleteEl || (galleryGrid ? galleryGrid.querySelector(`[data-id="${targetKey}"]`) : null);
+    // 3. Remove DOM element smoothly using safe attribute match (immune to special characters)
+    const targetKey = String(target.id || target.src || '');
+    const cardEl = galleryCardPendingDeleteEl || (galleryGrid ? Array.from(galleryGrid.querySelectorAll('.gallery-item')).find(el => el.getAttribute('data-id') === targetKey) : null);
+    
     if (cardEl) {
       cardEl.style.transition = 'all 0.3s ease';
       cardEl.style.opacity = '0';
       cardEl.style.transform = 'scale(0.85)';
       setTimeout(() => {
-        if (cardEl) cardEl.remove();
+        if (cardEl && cardEl.parentNode) cardEl.remove();
+        renderGalleryCards();
       }, 300);
     } else {
       renderGalleryCards();
     }
 
-    // 4. If Lightbox preview was open for this item:
+    // 4. Update or close Lightbox modal if open
     if (mediaModal && mediaModal.classList.contains('active')) {
       if (galleryMedia.length === 0) {
         closeModal();
@@ -1025,24 +1159,44 @@
     }
 
     closeGalleryDeleteModal();
-    showSiteToast(`${isVideo ? 'Video' : 'Photo'} deleted permanently`, '🗑️');
+    showSiteToast(`${isVideo ? 'Video' : 'Photo'} deleted permanently 🗑️`, '🗑️');
   }
 
   function setupGalleryDeleteModal() {
+    // 1. Delete button inside the enlarged media lightbox modal (user requested: only shows when photo/video is clicked)
+    if (modalDeleteBtn) {
+      modalDeleteBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!galleryMedia || galleryMedia.length === 0) return;
+        const currentItem = galleryMedia[currentModalIndex];
+        if (currentItem) {
+          const targetKey = String(currentItem.id || currentItem.src || '');
+          const cardEl = galleryGrid ? Array.from(galleryGrid.querySelectorAll('.gallery-item')).find(el => el.getAttribute('data-id') === targetKey) : null;
+          openGalleryDeleteModal(currentItem, cardEl);
+        }
+      });
+    }
+
+    // 2. Confirm delete button inside the confirmation dialog
     if (galleryDeleteConfirmBtn) {
       galleryDeleteConfirmBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         executeGalleryDelete();
       });
     }
 
+    // 3. Cancel delete button
     if (galleryDeleteCancelBtn) {
       galleryDeleteCancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         closeGalleryDeleteModal();
       });
     }
 
+    // 4. Backdrop click on delete modal to dismiss
     if (galleryDeleteModal) {
       galleryDeleteModal.addEventListener('click', (e) => {
         if (e.target === galleryDeleteModal) {
@@ -2313,15 +2467,6 @@
     if (modalCloseBtn) {
       modalCloseBtn.addEventListener('click', closeModal);
     }
-    const triggerModalDelete = (e) => {
-      e.stopPropagation();
-      if (galleryMedia && galleryMedia[currentModalIndex]) {
-        openGalleryDeleteModal(galleryMedia[currentModalIndex]);
-      }
-    };
-    if (modalDeleteBtn) {
-      modalDeleteBtn.addEventListener('click', triggerModalDelete);
-    }
     if (modalPrevBtn) {
       modalPrevBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2760,12 +2905,15 @@
       }
 
       // Default layout:
-      // Retro, Spider-Man, and Korean Life 4 Cuts default to 4-shot layout
+      // If user has explicitly selected 1-Shot keepsake, preserve it
+      // Otherwise, Retro, Spider-Man, and Korean Life 4 Cuts default to 4-shot layout
       // All other templates default to 3-shot vertical strip
-      if (frameKey === 'retro' || frameKey === 'spiderman' || frameKey === 'korean') {
-        currentLayout = '4';
-      } else {
-        currentLayout = '3';
+      if (currentLayout !== '1') {
+        if (frameKey === 'retro' || frameKey === 'spiderman' || frameKey === 'korean') {
+          currentLayout = '4';
+        } else {
+          currentLayout = '3';
+        }
       }
       layoutBtns.forEach(b => b.classList.toggle('active', b.dataset.layout === currentLayout));
 
@@ -2940,7 +3088,14 @@
       triggerFlash();
 
       // Grab current frame synchronously into memory canvas (Guarantees image 1, 2, 3 all render!)
-      const shotCanvas = grabVideoFrame();
+      let shotCanvas;
+      try {
+        shotCanvas = grabVideoFrame();
+      } catch (err) {
+        console.error('Could not grab video frame:', err);
+        showToast('Camera frame grab failed. Make sure camera is active! 📸', '⚠️');
+        return;
+      }
       capturedShots.push(shotCanvas);
 
       updateShotsUI();
@@ -2951,16 +3106,23 @@
         if (pboothSnapBtn) pboothSnapBtn.disabled = true;
 
         // Render composite photobooth strip with all shots!
-        const finalDataUrl = renderPhotoboothCanvas(capturedShots, currentFrame, currentLayout);
-        showResult(finalDataUrl);
+        try {
+          const finalDataUrl = renderPhotoboothCanvas(capturedShots, currentFrame, currentLayout);
+          if (!finalDataUrl || finalDataUrl === 'data:,') {
+            throw new Error('Canvas rendered empty data URL');
+          }
+          showResult(finalDataUrl);
+          showToast('Picture ready! Save it or Take Again 📸✨', '💖');
+        } catch (renderErr) {
+          console.error('Photobooth canvas render error:', renderErr);
+          showToast('Photo render failed! Please try again 🔄', '⚠️');
+        }
 
         // Reset in-memory shots so user can retake or save as they choose
         capturedShots = [];
         updateShotsUI();
         isTakingPhoto = false;
         if (pboothSnapBtn) pboothSnapBtn.disabled = false;
-
-        showToast('Picture ready! Save it or Take Again 📸✨', '💖');
       } else {
         const nextShotNum = capturedShots.length + 1;
         showToast(`Shot ${capturedShots.length} captured! Ready for shot ${nextShotNum} ✨`, '📸');
@@ -3026,7 +3188,8 @@
         sW = imgW;
         sH = imgW / targetRatio;
         sX = 0;
-        sY = (imgH - sH) / 2;
+        // Bias crop slightly toward top so the user's face and eyes remain centered!
+        sY = Math.max(0, (imgH - sH) * 0.35);
       }
 
       ctx.drawImage(img, sX, sY, sW, sH, targetX, targetY, targetW, targetH);
@@ -3039,21 +3202,13 @@
       const ctx = canvas.getContext('2d');
       const dateInfo = getUpdatedDateInfo();
 
-      // Configure dimensions per layout
-      if (layout === '4' && (frameKey === 'retro' || frameKey === 'spiderman' || frameKey === 'korean')) {
-        // Vertical 4-Photo Strip (matches retro, comic, and Korean Life 4 Cuts!)
+      // Configure dimensions per layout:
+      // 1-Shot Keepsake: 600x920 (perfect postcard/keepsake ratio, prevents face crop and keeps all captions visible)
+      // 3-Shot Strip / 4-Shot Strip: 600x1760 (classic vertical photobooth strip)
+      if (layout === '1') {
         canvas.width = 600;
-        canvas.height = 1760;
-      } else if (layout === '4') {
-        // 2x2 Grid Strip if explicitly requested
-        canvas.width = 720;
-        canvas.height = 1040;
-      } else if (layout === '1') {
-        // 1-Shot Polaroid Keepsake
-        canvas.width = 640;
-        canvas.height = 880;
+        canvas.height = 920;
       } else {
-        // Classic 3-Photo Vertical Strip
         canvas.width = 600;
         canvas.height = 1760;
       }
@@ -3111,8 +3266,8 @@
         if (count === 1) {
           return [{ x: margin, y: startY, w: W - (margin * 2), h: totalH, idx: 0 }];
         }
-        if (count === 4 && layout === '4' && (frameKey === 'retro' || frameKey === 'spiderman' || frameKey === 'korean')) {
-          // Vertical 4-shot stack (exact 1:1 match to reference photos & Korean Life 4 Cuts!)
+        if (count === 4) {
+          // Vertical 4-shot stack (exact match to Life 4 Cuts!)
           const pw = W - (margin * 2);
           const ph = Math.floor((totalH - (gap * 3)) / 4);
           return [
@@ -3120,19 +3275,6 @@
             { x: margin, y: startY + ph + gap, w: pw, h: ph, idx: 1 },
             { x: margin, y: startY + (ph + gap) * 2, w: pw, h: ph, idx: 2 },
             { x: margin, y: startY + (ph + gap) * 3, w: pw, h: ph, idx: 3 }
-          ];
-        }
-        if (count === 4 && layout === '4') {
-          // 2x2 grid if non-strip
-          const gapX = gap;
-          const gapY = gap;
-          const pw = Math.floor((W - (margin * 2) - gapX) / 2);
-          const ph = Math.floor((totalH - gapY) / 2);
-          return [
-            { x: margin, y: startY, w: pw, h: ph, idx: 0 },
-            { x: margin + pw + gapX, y: startY, w: pw, h: ph, idx: 1 },
-            { x: margin, y: startY + ph + gapY, w: pw, h: ph, idx: 2 },
-            { x: margin + pw + gapX, y: startY + ph + gapY, w: pw, h: ph, idx: 3 }
           ];
         }
         // count === 3 (vertical strip)
@@ -3274,12 +3416,13 @@
         // Deep red flower sticker on top-right under camera
         ctx.fillText('🌺', camX + camW - 30, camY + camH + 44);
 
-        // Photo Cutouts (3 vertical rectangular frames)
-        const photoCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
+        // Photo Cutouts (Dynamic: 1 keepsake photo or 3/4-strip photos)
+        const isOneShot = layout === '1';
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
         const margin = 55;
-        const startY = camY + camH + 28;
-        const totalH = 1200;
-        const gap = 24;
+        const startY = camY + camH + (isOneShot ? 18 : 28);
+        const totalH = isOneShot ? 400 : 1200;
+        const gap = layout === '4' ? 18 : 24;
         const rects = computePhotoRects(photoCount, margin, startY, totalH, gap);
 
         rects.forEach((r, i) => {
@@ -3297,36 +3440,38 @@
           drawImageCover(ctx, img, r.x, r.y, r.w, r.h);
         });
 
-        // Snoopy Cupid drawing bow & arrow with heart tip (Left edge of photo 2)
-        const snoopyY = startY + (totalH / 3) + 20;
+        // Snoopy Cupid drawing bow & arrow with heart tip (Left edge of photo)
+        const snoopyY = startY + (totalH / (isOneShot ? 2 : 3)) + (isOneShot ? 0 : 20);
         ctx.font = '48px sans-serif';
         ctx.fillText('🏹', margin - 28, snoopyY);
         ctx.fillText('❤️', margin - 6, snoopyY + 6);
         ctx.fillText('🐶', margin - 22, snoopyY - 32);
 
-        // Stitched Apple slice sticker (Right edge of photo 2)
+        // Stitched Apple slice sticker (Right edge of photo)
         ctx.fillText('🍎', W - margin + 30, snoopyY);
 
-        // Stack of 3 Coffee Cups with splash droplets (Right edge between photo 2 & 3)
-        const coffeeY = startY + (totalH * 2 / 3) + 20;
-        ctx.fillText('☕', W - margin + 30, coffeeY);
-        ctx.fillText('🤎', W - margin + 36, coffeeY + 36);
+        if (!isOneShot) {
+          // Stack of 3 Coffee Cups with splash droplets (Right edge between photo 2 & 3)
+          const coffeeY = startY + (totalH * 2 / 3) + 20;
+          ctx.fillText('☕', W - margin + 30, coffeeY);
+          ctx.fillText('🤎', W - margin + 36, coffeeY + 36);
+        }
 
         // Bottom Section: Teddy bear wearing party hat, present box, vintage ticket, cake slice
-        const bottomY = startY + totalH + 20;
+        const bottomY = startY + totalH + (isOneShot ? 16 : 20);
 
         // Teddy bear with party cone hat and gift box (bottom-left)
-        ctx.font = '56px sans-serif';
-        ctx.fillText('🧸', margin + 20, bottomY + 70);
-        ctx.font = '36px sans-serif';
-        ctx.fillText('🎉', margin + 14, bottomY + 20);
-        ctx.fillText('🎁', margin - 24, bottomY + 80);
+        ctx.font = isOneShot ? '46px sans-serif' : '56px sans-serif';
+        ctx.fillText('🧸', margin + 14, bottomY + (isOneShot ? 58 : 70));
+        ctx.font = isOneShot ? '30px sans-serif' : '36px sans-serif';
+        ctx.fillText('🎉', margin + 10, bottomY + (isOneShot ? 18 : 20));
+        ctx.fillText('🎁', margin - 24, bottomY + (isOneShot ? 68 : 80));
 
         // Vintage Admission Ticket: "good things are coming" (Built-in description + dynamic date)
-        const ticketW = 230;
-        const ticketH = 80;
+        const ticketW = 240;
+        const ticketH = isOneShot ? 72 : 80;
         const ticketX = (W - ticketW) / 2 + 10;
-        const ticketY = bottomY + 8;
+        const ticketY = bottomY + (isOneShot ? 6 : 8);
 
         ctx.fillStyle = '#f6f0e6';
         ctx.beginPath();
@@ -3367,9 +3512,9 @@
         ctx.fillText(`${dateInfo.weekday.slice(0, 3).toUpperCase()} • ${dateInfo.dateFormatted.toUpperCase()}`, ticketX + 36, ticketY + 66);
 
         // Chocolate Cake Slice with cherry (bottom-right)
-        ctx.font = '52px sans-serif';
+        ctx.font = isOneShot ? '44px sans-serif' : '52px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🍰', W - margin - 15, bottomY + 65);
+        ctx.fillText('🍰', W - margin - 15, bottomY + (isOneShot ? 58 : 65));
 
       // ======================================================================
       // 2. TEMPLATE 2: 🎱 70s / 90s RETRO POP (`retro`)
@@ -3453,12 +3598,13 @@
         ctx.fillStyle = '#6db4ff';
         ctx.fillRect(camX + camW - 43, camY + 9, 20, 10);
 
-        // 4 Vertical Photo Slots (matching reference image 2)
-        const photoCount = layout === '1' ? 1 : 4;
+        // Photo Slots (Dynamic: 1 keepsake photo, 3 or 4 strip photos)
+        const isOneShot = layout === '1';
+        const photoCount = isOneShot ? 1 : (layout === '3' ? 3 : 4);
         const margin = 56;
-        const startY = camY + camH + 20;
-        const totalH = 1180;
-        const gap = 18;
+        const startY = camY + camH + (isOneShot ? 16 : 20);
+        const totalH = isOneShot ? 430 : 1180;
+        const gap = isOneShot ? 0 : (layout === '3' ? 24 : 18);
         const rects = computePhotoRects(photoCount, margin, startY, totalH, gap);
 
         rects.forEach((r, i) => {
@@ -3472,51 +3618,84 @@
           ctx.strokeRect(r.x, r.y, r.w, r.h);
         });
 
-        // Pop stickers between photo slots (matching reference image 2!)
+        // Pop stickers
         // Above photo 1: Movie clapperboard on left, Mario mushroom on right
         ctx.font = '36px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('🎬', margin + 14, startY - 8);
         ctx.fillText('🍄', W - margin - 14, startY + 14);
 
-        // Between photo 1 & 2: Billiard 7-ball (red) on left
-        const p1Bottom = rects[0].y + rects[0].h;
-        ctx.fillStyle = '#e61e2a';
-        ctx.beginPath();
-        ctx.arc(margin - 10, p1Bottom + 8, 22, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(margin - 10, p1Bottom + 8, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#111111';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('7', margin - 10, p1Bottom + 13);
+        if (isOneShot) {
+          // Billiard 7-ball (red) on left of photo
+          const p1Mid = rects[0].y + (rects[0].h / 2);
+          ctx.fillStyle = '#e61e2a';
+          ctx.beginPath();
+          ctx.arc(margin - 12, p1Mid - 20, 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(margin - 12, p1Mid - 20, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('7', margin - 12, p1Mid - 15);
 
-        // Between photo 2 & 3: Billiard 8-ball (black) on right
-        const p2Bottom = rects[1] ? (rects[1].y + rects[1].h) : (startY + 400);
-        ctx.fillStyle = '#111111';
-        ctx.beginPath();
-        ctx.arc(W - margin + 12, p2Bottom + 6, 22, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(W - margin + 12, p2Bottom + 6, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#111111';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText('8', W - margin + 12, p2Bottom + 11);
+          // Billiard 8-ball (black) on right of photo
+          ctx.fillStyle = '#111111';
+          ctx.beginPath();
+          ctx.arc(W - margin + 12, p1Mid - 20, 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(W - margin + 12, p1Mid - 20, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('8', W - margin + 12, p1Mid - 15);
 
-        // Paint palette on left of photo 3 & Blue Converse sneaker on right
-        const p3Top = rects[2] ? rects[2].y : (startY + 600);
-        ctx.font = '34px sans-serif';
-        ctx.fillText('🎨', margin - 8, p3Top + 60);
-        ctx.fillText('👟', W - margin + 14, p3Top + 60);
+          ctx.font = '34px sans-serif';
+          ctx.fillText('🎨', margin - 8, p1Mid + 60);
+          ctx.fillText('👟', W - margin + 14, p1Mid + 60);
+        } else {
+          // Between photo 1 & 2: Billiard 7-ball (red) on left
+          const p1Bottom = rects[0].y + rects[0].h;
+          ctx.fillStyle = '#e61e2a';
+          ctx.beginPath();
+          ctx.arc(margin - 10, p1Bottom + 8, 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(margin - 10, p1Bottom + 8, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('7', margin - 10, p1Bottom + 13);
 
-        // Between photo 3 & 4: Red movie ticket #7 on left & Vinyl record on right
-        const p3Bottom = rects[2] ? (rects[2].y + rects[2].h) : (startY + 800);
-        ctx.fillText('🎟️', margin - 6, p3Bottom + 16);
-        ctx.fillText('💿', W - margin + 12, p3Bottom + 16);
+          // Between photo 2 & 3: Billiard 8-ball (black) on right
+          const p2Bottom = rects[1] ? (rects[1].y + rects[1].h) : (startY + 400);
+          ctx.fillStyle = '#111111';
+          ctx.beginPath();
+          ctx.arc(W - margin + 12, p2Bottom + 6, 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(W - margin + 12, p2Bottom + 6, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('8', W - margin + 12, p2Bottom + 11);
+
+          // Paint palette on left of photo 3 & Blue Converse sneaker on right
+          const p3Top = rects[2] ? rects[2].y : (startY + 600);
+          ctx.font = '34px sans-serif';
+          ctx.fillText('🎨', margin - 8, p3Top + 60);
+          ctx.fillText('👟', W - margin + 14, p3Top + 60);
+
+          // Between photo 3 & 4: Red movie ticket #7 on left & Vinyl record on right
+          const p3Bottom = rects[2] ? (rects[2].y + rects[2].h) : (startY + 800);
+          ctx.fillText('🎟️', margin - 6, p3Bottom + 16);
+          ctx.fillText('💿', W - margin + 12, p3Bottom + 16);
+        }
 
         // Bottom Section: Yellow "BOOM CHUTE" ticket, bold "RETRO 1990'S", and retro comic eyes
         const bottomY = startY + totalH + 16;
@@ -3547,7 +3726,7 @@
         drawBarcode(ticketX + ticketW - 60, ticketY + 12, 48, 38, '#111');
 
         // Bold distressed white script "RETRO" with red outline & "1990'S"
-        const retroY = bottomY + 115;
+        const retroY = bottomY + (isOneShot ? 95 : 115);
         ctx.font = 'italic 900 68px "Arial Black", Impact, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = '#220306';
@@ -3569,8 +3748,8 @@
 
         // Two Retro Pop Comic Eyes looking down at very bottom
         ctx.font = '48px sans-serif';
-        ctx.fillText('👁️', (W / 2) - 48, H - 36);
-        ctx.fillText('👁️', (W / 2) + 48, H - 36);
+        ctx.fillText('👁️', (W / 2) - 48, H - (isOneShot ? 30 : 36));
+        ctx.fillText('👁️', (W / 2) + 48, H - (isOneShot ? 30 : 36));
 
       // ======================================================================
       // 3. TEMPLATE 3: 📎 MEMORY BOOK SCRAPBOOK (`scrapbook`)
@@ -3672,25 +3851,20 @@
         ctx.fillText('✨', noteX + 22, noteY + 18);
         ctx.fillText('⭐', noteX + noteW - 24, noteY + 80);
 
-        // 3 Tilted Polaroid Frames with torn / deckle paper borders (matching reference image 3)
-        const angles = [-0.075, 0.005, 0.065]; // -4.3 deg, ~0 deg, +3.7 deg
-        const photoCount = layout === '1' ? 1 : 3;
-        const pCenters = [
-          { x: 300, y: 350 },
-          { x: 300, y: 850 },
-          { x: 300, y: 1350 }
-        ];
-        const pw = 430;
-        const ph = 340;
+        // Polaroid Frames & Scrapbook layout (Dynamic: 1 keepsake photo or 3/4-strip photos)
+        const isOneShot = layout === '1';
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
 
-        for (let i = 0; i < photoCount; i++) {
-          const center = pCenters[i];
-          const angle = angles[i];
-          const img = shots[i] || shots[shots.length - 1] || shots[0];
+        if (isOneShot) {
+          // 1 Centered tilted Polaroid frame with deckle paper border
+          const pw = 470;
+          const ph = 390;
+          const center = { x: W / 2, y: 395 };
+          const img = shots[0];
 
           ctx.save();
           ctx.translate(center.x, center.y);
-          ctx.rotate(angle);
+          ctx.rotate(0.015);
 
           // Torn deckle paper drop shadow
           ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
@@ -3719,56 +3893,143 @@
           drawImageCover(ctx, img, innerX, innerY, innerW, innerH);
 
           ctx.restore();
+
+          // Embellishments positioned around single keepsake frame:
+          ctx.font = '54px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🌺', 70, 280);
+
+          ctx.fillStyle = '#d4af37';
+          ctx.beginPath();
+          roundRect(28, 430, 68, 85, 6);
+          ctx.fill();
+          ctx.strokeStyle = '#aa820a';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.fillStyle = '#222';
+          ctx.fillRect(36, 438, 52, 69);
+          ctx.font = '36px sans-serif';
+          ctx.fillText('🎓', 62, 484);
+
+          // Silver camera
+          ctx.fillStyle = '#c5c8cb';
+          ctx.beginPath();
+          roundRect(W - 100, 260, 78, 115, 10);
+          ctx.fill();
+          ctx.strokeStyle = '#999e82';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#111';
+          ctx.fillRect(W - 90, 275, 58, 48);
+          ctx.beginPath();
+          ctx.arc(W - 61, 346, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Cute tabby cat reading book
+          ctx.font = '50px sans-serif';
+          ctx.fillText('🐱', W - 75, 480);
+          ctx.font = '32px sans-serif';
+          ctx.fillText('📖', W - 105, 495);
+
+          // Red satin ribbon
+          ctx.font = '46px sans-serif';
+          ctx.fillText('🎀', W - 80, 590);
+        } else {
+          // 3 or 4 Tilted Polaroid Frames with torn / deckle paper borders
+          const pCenters = photoCount === 4
+            ? [{ x: 300, y: 290 }, { x: 300, y: 670 }, { x: 300, y: 1050 }, { x: 300, y: 1430 }]
+            : [{ x: 300, y: 350 }, { x: 300, y: 850 }, { x: 300, y: 1350 }];
+          const angles = photoCount === 4 ? [-0.06, 0.05, -0.04, 0.05] : [-0.075, 0.005, 0.065];
+          const pw = 430;
+          const ph = photoCount === 4 ? 300 : 340;
+
+          for (let i = 0; i < photoCount; i++) {
+            const center = pCenters[i];
+            const angle = angles[i];
+            const img = shots[i] || shots[shots.length - 1] || shots[0];
+
+            ctx.save();
+            ctx.translate(center.x, center.y);
+            ctx.rotate(angle);
+
+            // Torn deckle paper drop shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            roundRect(-pw / 2 + 8, -ph / 2 + 10, pw, ph, 8);
+            ctx.fill();
+
+            // Cream watercolor paper frame
+            ctx.fillStyle = '#faf8f2';
+            roundRect(-pw / 2, -ph / 2, pw, ph, 8);
+            ctx.fill();
+
+            // Scalloped / deckle paper edge detail
+            ctx.strokeStyle = '#e5dfd2';
+            ctx.lineWidth = 3;
+            roundRect(-pw / 2, -ph / 2, pw, ph, 8);
+            ctx.stroke();
+
+            // Photo cutout
+            const innerW = pw - 44;
+            const innerH = ph - 54;
+            const innerX = -innerW / 2;
+            const innerY = -innerH / 2 - 4;
+
+            ctx.fillStyle = '#111';
+            ctx.fillRect(innerX, innerY, innerW, innerH);
+            drawImageCover(ctx, img, innerX, innerY, innerW, innerH);
+
+            ctx.restore();
+          }
+
+          // Embellishment 1: Tropical White Hibiscus Flower with crimson center (left of middle photo)
+          ctx.font = '64px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🌺', 75, 710);
+
+          // Embellishment 2: Mini ornate framed graduation portrait
+          ctx.fillStyle = '#d4af37';
+          ctx.beginPath();
+          roundRect(32, 800, 68, 85, 6);
+          ctx.fill();
+          ctx.strokeStyle = '#aa820a';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.fillStyle = '#222';
+          ctx.fillRect(40, 808, 52, 69);
+          ctx.font = '36px sans-serif';
+          ctx.fillText('🎓', 66, 854);
+
+          // Embellishment 3: Retro silver compact digital camera with flash (right of middle photo)
+          ctx.fillStyle = '#c5c8cb';
+          ctx.beginPath();
+          roundRect(W - 105, 770, 78, 115, 10);
+          ctx.fill();
+          ctx.strokeStyle = '#999e82';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Camera screen & lens
+          ctx.fillStyle = '#111';
+          ctx.fillRect(W - 95, 785, 58, 48);
+          ctx.beginPath();
+          ctx.arc(W - 66, 856, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Embellishment 4: Cute ginger tabby cat reading a book (bottom-right of photo 3)
+          ctx.font = '54px sans-serif';
+          ctx.fillText('🐱', W - 80, 1220);
+          ctx.font = '36px sans-serif';
+          ctx.fillText('📖', W - 110, 1235);
+
+          // Embellishment 5: Red satin ribbon bow tied on bottom frame corner
+          ctx.font = '48px sans-serif';
+          ctx.fillText('🎀', W - 85, 1420);
         }
-
-        // Embellishment 1: Tropical White Hibiscus Flower with crimson center (left of middle photo)
-        ctx.font = '64px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🌺', 75, 710);
-
-        // Embellishment 2: Mini ornate framed graduation portrait
-        ctx.fillStyle = '#d4af37';
-        ctx.beginPath();
-        roundRect(32, 800, 68, 85, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#aa820a';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = '#222';
-        ctx.fillRect(40, 808, 52, 69);
-        ctx.font = '36px sans-serif';
-        ctx.fillText('🎓', 66, 854);
-
-        // Embellishment 3: Retro silver compact digital camera with flash (right of middle photo)
-        ctx.fillStyle = '#c5c8cb';
-        ctx.beginPath();
-        roundRect(W - 105, 770, 78, 115, 10);
-        ctx.fill();
-        ctx.strokeStyle = '#999e82';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // Camera screen & lens
-        ctx.fillStyle = '#111';
-        ctx.fillRect(W - 95, 785, 58, 48);
-        ctx.beginPath();
-        ctx.arc(W - 66, 856, 16, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Embellishment 4: Cute ginger tabby cat reading a book (bottom-right of photo 3)
-        ctx.font = '54px sans-serif';
-        ctx.fillText('🐱', W - 80, 1220);
-        ctx.font = '36px sans-serif';
-        ctx.fillText('📖', W - 110, 1235);
-
-        // Embellishment 5: Red satin ribbon bow tied on bottom frame corner
-        ctx.font = '48px sans-serif';
-        ctx.fillText('🎀', W - 85, 1420);
 
         // Torn paper label with real-time dynamic date stamp (bottom)
         const dateTagW = 320;
         const dateTagH = 46;
         const dateTagX = (W - dateTagW) / 2;
-        const dateTagY = H - 75;
+        const dateTagY = H - 65;
 
         ctx.fillStyle = '#fdfbf7';
         roundRect(dateTagX, dateTagY, dateTagW, dateTagH, 6);
@@ -3827,12 +4088,13 @@
         drawSpiderWeb(60, H - 60, 110);
         drawSpiderWeb(W - 60, H - 60, 110);
 
-        // 4 Vertical Photo Slots with bold comic red borders
-        const photoCount = layout === '1' ? 1 : 4;
+        // Photo Slots (Dynamic: 1 keepsake photo, 3 or 4 strip photos)
+        const isOneShot = layout === '1';
+        const photoCount = isOneShot ? 1 : (layout === '3' ? 3 : 4);
         const margin = 48;
         const startY = 32;
-        const totalH = 1380;
-        const gap = 20;
+        const totalH = isOneShot ? 440 : 1380;
+        const gap = isOneShot ? 0 : (layout === '3' ? 24 : 20);
         const rects = computePhotoRects(photoCount, margin, startY, totalH, gap);
 
         rects.forEach((r, i) => {
@@ -3857,7 +4119,7 @@
 
         // Superhero Stickers matching reference image 4:
         // Top-left: Spider-Gwen hanging upside down by a web line
-        const gwenTopY = startY + 20;
+        const gwenTopY = startY + (isOneShot ? 10 : 20);
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -3874,8 +4136,8 @@
         ctx.font = '36px sans-serif';
         ctx.fillText('🤍', 35, gwenTopY + 110);
 
-        // Middle-right: Spider-Gwen shooting a web strand across photo 3
-        const webShootY = startY + (totalH * 2 / 4) + 60;
+        // Middle-right: Spider-Gwen shooting a web strand
+        const webShootY = startY + (isOneShot ? (totalH * 0.45) : (totalH * 2 / 4)) + 30;
         ctx.strokeStyle = '#00f0ff';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -3889,12 +4151,12 @@
         ctx.fillText('⚡', W - 32, webShootY - 40);
 
         // Bottom-left: Spider-Gwen crouching ready for action
-        const crouchY = startY + totalH - 60;
+        const crouchY = startY + (isOneShot ? (totalH - 30) : (totalH - 60));
         ctx.font = '54px sans-serif';
         ctx.fillText('🦸‍♀️', 38, crouchY);
 
         // Bottom Area: Official MARVEL box logo + 3D SPIDER-MAN title + Date
-        const logoY = startY + totalH + 28;
+        const logoY = startY + totalH + (isOneShot ? 22 : 28);
 
         // Official Red MARVEL box logo
         const marvelW = 95;
@@ -3988,9 +4250,14 @@
 
         // Outer rounded terracotta/caramel rectangle containing all photos
         const frameMargin = filmW + 20;
+        const isOneShot = layout === '1';
         const frameW = W - frameMargin - 20;
-        const frameY = 70;
-        const frameH = 1380;
+        const frameY = isOneShot ? 50 : 70;
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
+        const photoMargin = frameMargin + 14;
+        const startY = frameY + 16;
+        const totalH = isOneShot ? 440 : (layout === '4' ? 1220 : 1348);
+        const frameH = totalH + 32;
         const frameRadius = 20;
 
         ctx.strokeStyle = '#b85d34';
@@ -3999,12 +4266,8 @@
         roundRect(frameMargin, frameY, frameW, frameH, frameRadius);
         ctx.stroke();
 
-        // 3 Vertical Photo Slots
-        const photoCount = layout === '1' ? 1 : 3;
-        const photoMargin = frameMargin + 14;
-        const startY = frameY + 16;
-        const totalH = 1348;
-        const gap = 20;
+        // Photo Slots (Dynamic: 1 keepsake photo or 3/4-strip photos)
+        const gap = isOneShot ? 0 : (layout === '4' ? 16 : 20);
         const rects = computePhotoRects(photoCount, photoMargin, startY, totalH, gap);
 
         rects.forEach((r, i) => {
@@ -4021,9 +4284,9 @@
           ctx.strokeRect(r.x, r.y, r.w, r.h);
         });
 
-        // Hand-drawn sketch star doodle on right edge between photo 2 & 3
+        // Hand-drawn sketch star doodle on right edge
         const starX = W - 26;
-        const starY = startY + (totalH * 2 / 3);
+        const starY = startY + (isOneShot ? (totalH * 0.5) : (totalH * 2 / 3));
         ctx.strokeStyle = '#8c3d19';
         ctx.lineWidth = 2.5;
         function drawSketchStar(cx, cy, r) {
@@ -4048,7 +4311,7 @@
         drawSketchStar(starX, starY, 32);
 
         // Dashed Perforated Tear Line across the bottom
-        const tearY = frameY + frameH + 28;
+        const tearY = frameY + frameH + (isOneShot ? 16 : 28);
         ctx.strokeStyle = '#b85d34';
         ctx.lineWidth = 3;
         ctx.setLineDash([10, 8]);
@@ -4059,10 +4322,10 @@
         ctx.setLineDash([]); // Reset line dash
 
         // Warm Caramel / Terracotta Ticket Block at bottom
-        const ticketY = tearY + 22;
+        const ticketY = tearY + (isOneShot ? 14 : 22);
         const ticketW = frameW + 12;
         const ticketX = frameMargin - 6;
-        const ticketH = 190;
+        const ticketH = isOneShot ? 165 : 190;
 
         ctx.fillStyle = '#b85d34';
         ctx.beginPath();
@@ -4070,10 +4333,10 @@
         ctx.fill();
 
         // Realistic tall dark brown vertical barcode lines inside ticket block
-        drawBarcode(ticketX + 28, ticketY + 24, ticketW - 56, 75, '#421a0f');
+        drawBarcode(ticketX + 28, ticketY + (isOneShot ? 18 : 24), ticketW - 56, isOneShot ? 60 : 75, '#421a0f');
 
         // Solid dark brown horizontal divider line
-        const barLineY = ticketY + 118;
+        const barLineY = ticketY + (isOneShot ? 98 : 118);
         ctx.fillStyle = '#591f10';
         ctx.fillRect(ticketX + 24, barLineY, ticketW - 48, 8);
 
@@ -4081,7 +4344,7 @@
         ctx.fillStyle = '#591f10';
         ctx.font = 'bold 28px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('★   ★   ★', ticketX + (ticketW / 2), barLineY + 40);
+        ctx.fillText('★   ★   ★', ticketX + (ticketW / 2), barLineY + 36);
 
         // Dynamic real-time date stamp on ticket stub
         ctx.fillStyle = '#fbf8f3';
@@ -4107,15 +4370,17 @@
         ctx.letterSpacing = '3px';
         ctx.fillText('SPOTIFY PHOTOBOOTH • SPECIAL MEMORIES', W / 2, 28);
 
-        // Photo slots
+        const isOneShot = layout === '1';
+        // Photo slots (Dynamic: 1 keepsake photo or 3/4-strip photos)
         const photoMargin = 38;
         const photoW = W - (photoMargin * 2);
-        const photoH = 365;
-        const photoGap = 18;
         const startY = 42;
-        const drawCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
+        const drawCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
+        const photoGap = isOneShot ? 0 : (layout === '4' ? 14 : 18);
+        const photoH = isOneShot ? 420 : (layout === '4' ? 270 : 365);
+        const totalH = isOneShot ? photoH : (photoH * drawCount + photoGap * (drawCount - 1));
 
-        const rects = computePhotoRects(drawCount, photoMargin, startY, drawCount === 1 ? 1100 : (photoH * 3 + photoGap * 2), photoGap);
+        const rects = computePhotoRects(drawCount, photoMargin, startY, totalH, photoGap);
 
         rects.forEach((r, i) => {
           const img = shots[i] || shots[shots.length - 1] || shots[0];
@@ -4143,11 +4408,11 @@
         });
 
         // Spotify Music Player Widget Card (Below the photos)
-        const playerY = startY + (3 * (photoH + photoGap)) + 8;
+        const playerY = startY + totalH + 14;
         const playerW = photoW;
-        const playerH = H - playerY - 30;
+        const playerH = isOneShot ? 340 : (H - playerY - 30);
 
-        if (playerH > 100) {
+        if (playerH > 80) {
           // Player background card with glassmorphic border
           ctx.fillStyle = 'rgba(24, 20, 28, 0.95)';
           ctx.beginPath();
@@ -4272,6 +4537,7 @@
         ctx.fill();
 
         // Photobooth Ticket Punch Cutouts (Half circles on edges)
+        const isOneShot = layout === '1';
         ctx.fillStyle = '#591321';
         const cutoutR = 18;
         // Top edge notches
@@ -4283,11 +4549,12 @@
         ctx.fill();
 
         // Bottom edge notches
+        const bottomNotchY = isOneShot ? (ticketY + ticketH - 120) : (ticketY + ticketH - 170);
         ctx.beginPath();
-        ctx.arc(ticketX, ticketY + ticketH - 170, cutoutR, -Math.PI / 2, Math.PI / 2);
+        ctx.arc(ticketX, bottomNotchY, cutoutR, -Math.PI / 2, Math.PI / 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(ticketX + ticketW, ticketY + ticketH - 170, cutoutR, Math.PI / 2, -Math.PI / 2);
+        ctx.arc(ticketX + ticketW, bottomNotchY, cutoutR, Math.PI / 2, -Math.PI / 2);
         ctx.fill();
 
         // Top Header
@@ -4312,15 +4579,16 @@
         ctx.stroke();
         ctx.setLineDash([]); // Reset line dash
 
-        // 3 Vertical Photos in Ticket Frame
+        // Photos in Ticket Frame (Dynamic: 1 keepsake photo or 3/4-strip photos)
         const photoMargin = ticketX + 22;
         const photoW = ticketW - 44;
-        const photoH = 370;
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
         const photoGap = 16;
+        const photoH = isOneShot ? 440 : (layout === '4' ? 285 : 370);
+        const totalH = isOneShot ? photoH : (photoH * photoCount + photoGap * (photoCount - 1));
         const startY = ticketY + 125;
-        const photoCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
 
-        const rects = computePhotoRects(photoCount, photoMargin, startY, photoCount === 1 ? 1150 : (photoH * 3 + photoGap * 2), photoGap);
+        const rects = computePhotoRects(photoCount, photoMargin, startY, totalH, photoGap);
 
         rects.forEach((r, i) => {
           const img = shots[i] || shots[shots.length - 1] || shots[0];
@@ -4338,8 +4606,8 @@
           ctx.strokeRect(r.x, r.y, r.w, r.h);
         });
 
-        // Dashed tear line 2
-        const tearLine2Y = startY + (3 * (photoH + photoGap)) + 8;
+        // Dashed tear line 2 - positioned right after the photos
+        const tearLine2Y = startY + totalH + 14;
         ctx.strokeStyle = '#591321';
         ctx.lineWidth = 2.5;
         ctx.setLineDash([7, 5]);
@@ -4349,25 +4617,24 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Bottom Section: "Special Day" flowing calligraphy script
+        // Bottom Section: "Special Day" flowing calligraphy script — CENTERED
         ctx.fillStyle = '#591321';
-        ctx.font = 'italic 700 46px "Playfair Display", Georgia, serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('Special', ticketX + 45, tearLine2Y + 62);
-        ctx.fillText('Day', ticketX + 90, tearLine2Y + 105);
-
-        // Retro brown camera sticker with pink hearts
-        ctx.font = '38px sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText('📷', ticketX + ticketW - 45, tearLine2Y + 80);
-        ctx.font = '22px sans-serif';
-        ctx.fillText('💕', ticketX + ticketW - 35, tearLine2Y + 50);
-
-        // Date & Weekday Stamp
-        ctx.fillStyle = '#591321';
-        ctx.font = 'bold 15px Outfit, sans-serif';
+        ctx.font = 'italic 700 44px "Playfair Display", Georgia, serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`${dateInfo.weekday}, ${dateInfo.dateFormatted} • ${dateInfo.timeFormatted}`, W / 2, tearLine2Y + 138);
+        ctx.fillText('Special Day', W / 2, tearLine2Y + 54);
+
+        // Retro brown camera sticker with pink hearts (right side)
+        ctx.font = '36px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('📷', ticketX + ticketW - 38, tearLine2Y + 64);
+        ctx.font = '20px sans-serif';
+        ctx.fillText('💕', ticketX + ticketW - 30, tearLine2Y + 38);
+
+        // Date & Weekday Stamp — centered below Special Day
+        ctx.fillStyle = '#591321';
+        ctx.font = 'bold 14px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${dateInfo.weekday}, ${dateInfo.dateFormatted} • ${dateInfo.timeFormatted}`, W / 2, tearLine2Y + 92);
 
         ctx.fillStyle = '#591321';
         ctx.font = 'bold 13px Outfit, sans-serif';
@@ -4395,13 +4662,15 @@
         ctx.letterSpacing = '3px';
         ctx.fillText('♡ SWEET MEMORIES ♡', W / 2, 45);
 
+        const isOneShot = layout === '1';
         const photoMargin = 32;
-        const photoH = 370;
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
         const photoGap = 20;
+        const photoH = isOneShot ? 480 : (layout === '4' ? 290 : 370);
         const startY = 65;
-        const photoCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
+        const totalH = isOneShot ? photoH : (photoH * photoCount + photoGap * (photoCount - 1));
 
-        const rects = computePhotoRects(photoCount, photoMargin, startY, photoCount === 1 ? 1200 : (photoH * 3 + photoGap * 2), photoGap);
+        const rects = computePhotoRects(photoCount, photoMargin, startY, totalH, photoGap);
 
         rects.forEach((r, i) => {
           const img = shots[i] || shots[shots.length - 1] || shots[0];
@@ -4440,13 +4709,15 @@
         ctx.letterSpacing = '3px';
         ctx.fillText('KODAK MEMORIES 400', W / 2, 42);
 
+        const isOneShot = layout === '1';
         const photoMargin = 38;
-        const photoH = 370;
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
         const photoGap = 20;
+        const photoH = isOneShot ? 480 : (layout === '4' ? 290 : 370);
         const startY = 65;
-        const photoCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
+        const totalH = isOneShot ? photoH : (photoH * photoCount + photoGap * (photoCount - 1));
 
-        const rects = computePhotoRects(photoCount, photoMargin, startY, photoCount === 1 ? 1200 : (photoH * 3 + photoGap * 2), photoGap);
+        const rects = computePhotoRects(photoCount, photoMargin, startY, totalH, photoGap);
 
         rects.forEach((r, i) => {
           const img = shots[i] || shots[shots.length - 1] || shots[0];
@@ -4485,13 +4756,15 @@
         ctx.letterSpacing = '2px';
         ctx.fillText('우리의 순간 ✨', W / 2, 42);
 
+        const isOneShot = layout === '1';
         const photoMargin = 36;
-        const photoH = 370;
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
         const photoGap = 18;
+        const photoH = isOneShot ? 480 : (layout === '4' ? 290 : 370);
         const startY = 62;
-        const photoCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
+        const totalH = isOneShot ? photoH : (photoH * photoCount + photoGap * (photoCount - 1));
 
-        const rects = computePhotoRects(photoCount, photoMargin, startY, photoCount === 1 ? 1200 : (layout === '4' ? 1200 : photoH * 3 + photoGap * 2), photoGap);
+        const rects = computePhotoRects(photoCount, photoMargin, startY, totalH, photoGap);
 
         rects.forEach((r, i) => {
           const img = shots[i] || shots[shots.length - 1] || shots[0];
@@ -4519,18 +4792,26 @@
         });
 
         // Cute side stickers
-        ctx.font = '28px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('⭐', photoMargin - 15, startY + 120);
-        ctx.fillText('🎀', W - photoMargin + 15, startY + 360);
-        ctx.fillText('💖', photoMargin - 15, startY + 600);
+        if (isOneShot) {
+          ctx.font = '28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('⭐', photoMargin - 15, startY + 60);
+          ctx.fillText('🎀', W - photoMargin + 15, startY + 220);
+          ctx.fillText('💖', photoMargin - 15, startY + 400);
+        } else {
+          ctx.font = '28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('⭐', photoMargin - 15, startY + 120);
+          ctx.fillText('🎀', W - photoMargin + 15, startY + 360);
+          ctx.fillText('💖', photoMargin - 15, startY + 600);
+        }
 
         // Footer Korean Life 4 Cuts tag
         ctx.fillStyle = '#4a2574';
         ctx.font = 'bold 16px Outfit, sans-serif';
         ctx.textAlign = 'center';
         ctx.letterSpacing = '3px';
-        ctx.fillText('LIFE 4 CUTS • OUR MEMORY', W / 2, H - 60);
+        ctx.fillText(isOneShot ? 'LIFE 4 CUTS • OUR MOMENT' : 'LIFE 4 CUTS • OUR MEMORY', W / 2, H - 60);
 
         ctx.fillStyle = '#6b439c';
         ctx.font = '500 14px Outfit, sans-serif';
@@ -4556,13 +4837,15 @@
         ctx.letterSpacing = '8px';
         ctx.fillText('M O M E N T S', W / 2, 54);
 
+        const isOneShot = layout === '1';
         const photoMargin = 40;
-        const photoH = 370;
+        const photoCount = isOneShot ? 1 : (layout === '4' ? 4 : 3);
         const photoGap = 20;
+        const photoH = isOneShot ? 480 : (layout === '4' ? 290 : 370);
         const startY = 74;
-        const photoCount = layout === '1' ? 1 : (layout === '4' ? 4 : 3);
+        const totalH = isOneShot ? photoH : (photoH * photoCount + photoGap * (photoCount - 1));
 
-        const rects = computePhotoRects(photoCount, photoMargin, startY, photoCount === 1 ? 1200 : (photoH * 3 + photoGap * 2), photoGap);
+        const rects = computePhotoRects(photoCount, photoMargin, startY, totalH, photoGap);
 
         rects.forEach((r, i) => {
           const img = shots[i] || shots[shots.length - 1] || shots[0];
@@ -4580,7 +4863,7 @@
         ctx.font = '600 12px Outfit, sans-serif';
         ctx.textAlign = 'center';
         ctx.letterSpacing = '4px';
-        ctx.fillText('COLLECTION NO. 01 • EDITORIAL STRIP', W / 2, H - 65);
+        ctx.fillText(isOneShot ? 'COLLECTION NO. 01 • EDITORIAL KEEPSAKE' : 'COLLECTION NO. 01 • EDITORIAL STRIP', W / 2, H - 65);
 
         ctx.fillStyle = '#555555';
         ctx.font = '500 13px Outfit, sans-serif';

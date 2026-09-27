@@ -155,7 +155,7 @@ const CONFIG = {
   // 💌 FLOATING "NOTE" BUTTON MESSAGE (Shown when tapping the floating Note button)
   floatingNote: {
     greeting: "Lyka 💖",
-    text: "dili manglood kay sayang ka gwapa HAHAHAH",
+    text: "dili mangsapotsapot kay sayang ka gwapa HAHAHAH",
     author: "JR "
   },
 
