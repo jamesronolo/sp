@@ -185,7 +185,6 @@
         <div class="counter-wrapper" aria-label="Live current time and weekday">
           <!-- Real-Time "What Time Is Now" Live Clock Pill -->
           <div class="live-clock-badge" id="live-clock-pill" title="Live Local Current Time">
-            <span class="live-clock-dot" aria-hidden="true"></span>
             <span class="live-clock-label">What time is now:</span>
             <span class="live-clock-val" id="live-time-now">--:--:--</span>
             <span class="live-clock-ampm" id="live-ampm-now">--</span>
@@ -260,24 +259,24 @@
           </button>
         </div>
 
-        <!-- Realtime Upload Toolbar for Photos & Videos -->
+        <!-- Realtime Upload Toolbar for Photos & Videos (Any device: Mobile, Tablet, PC) -->
         <div class="gallery-upload-toolbar" aria-label="Upload photo or video to gallery">
-          <button type="button" class="gallery-upload-btn btn-upload-photo" id="gallery-upload-photo-btn" title="Upload your own photo in realtime (.jpg, .png, .webp)">
+          <label for="gallery-photo-input" class="gallery-upload-btn btn-upload-photo" id="gallery-upload-photo-btn" role="button" tabindex="0" title="Upload your own photo in realtime (.jpg, .png, .webp, camera)">
             <svg class="upload-btn-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
               <circle cx="12" cy="13" r="4"/>
             </svg>
             <span>+ Upload Photo</span>
-          </button>
-          <button type="button" class="gallery-upload-btn btn-upload-video" id="gallery-upload-video-btn" title="Upload your own video in realtime (.mp4, .webm, .mov)">
+          </label>
+          <label for="gallery-video-input" class="gallery-upload-btn btn-upload-video" id="gallery-upload-video-btn" role="button" tabindex="0" title="Upload your own video in realtime (.mp4, .webm, .mov, camera)">
             <svg class="upload-btn-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="2" y="4" width="15" height="16" rx="2"/>
               <path d="M17 9l5-3v12l-5-3z"/>
             </svg>
             <span>+ Upload Video</span>
-          </button>
-          <input type="file" id="gallery-photo-input" accept="image/*" multiple style="display: none;">
-          <input type="file" id="gallery-video-input" accept="video/*" multiple style="display: none;">
+          </label>
+          <input type="file" id="gallery-photo-input" accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple class="visually-hidden-file-input">
+          <input type="file" id="gallery-video-input" accept="video/*,.mp4,.webm,.mov,.m4v,.ogg,.3gp" multiple class="visually-hidden-file-input">
         </div>
       </div>
 
@@ -550,7 +549,7 @@
         <div class="pbooth-stage-wrapper">
           <!-- Viewfinder Screen -->
           <div class="pbooth-viewfinder" id="pbooth-viewfinder">
-            <video id="pbooth-video" autoplay playsinline webkit-playsinline muted></video>
+            <video id="pbooth-video" autoplay playsinline webkit-playsinline muted disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen"></video>
             <canvas id="pbooth-work-canvas" style="display: none;"></canvas>
 
             <!-- Floating Flip Camera Button (Quick Mobile & Desktop Switch) -->
