@@ -481,7 +481,7 @@
   const wrongHints = [
     'Wrong answer! Dili ka maka-access 🙅‍♀️',
     'Hala, sayop! Reconsider palihog 💕',
-    'Dili pwede mosud kung dili ikaw si Liks! 🥺',
+    'Dili pwede mosud kung dili ikaw Liks! 🥺',
     'Sure ka? Try again~ Click Yes aron maka-access! 😘',
   ];
   let wrongCount = 0;

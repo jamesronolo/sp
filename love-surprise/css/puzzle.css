@@ -163,6 +163,18 @@ html.puzzle-already-unlocked #puzzle-question-modal {
   position: relative;
 }
 
+/* ── Controls & Progress (Centered) ──────────────────────────────────────── */
+.puzzle-controls-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 220px;
+  margin-top: 8px;
+  text-align: center;
+}
+
 /* ── Progress bar ─────────────────────────────────────────────────────────── */
 .puzzle-progress-bar-wrap {
   width: 100%;
@@ -172,7 +184,7 @@ html.puzzle-already-unlocked #puzzle-question-modal {
   height: 4px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.09);
-  margin-top: 8px;
+  margin: 0 auto;
 }
 .puzzle-progress-fill {
   height: 100%;
@@ -187,7 +199,8 @@ html.puzzle-already-unlocked #puzzle-question-modal {
   color: rgba(200,185,203,0.6);
   text-align: center;
   letter-spacing: 0.08em;
-  margin-top: 3px;
+  margin-top: 4px;
+  width: 100%;
 }
 
 /* ── Puzzle piece ─────────────────────────────────────────────────────────── */
@@ -271,7 +284,9 @@ html.puzzle-already-unlocked #puzzle-question-modal {
 .puzzle-action-buttons {
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-top: 8px;
+  width: 100%;
 }
 .puzzle-btn {
   font-family: 'Outfit', sans-serif;
