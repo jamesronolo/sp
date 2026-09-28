@@ -36,7 +36,7 @@ const CONFIG = {
   enableMusic: true,
   // Auto-play music on the user's first click anywhere on the page
   autoPlayOnFirstClick: true,
-  // Default starting track index (0 = first song: "Teka Lang")
+  // Default starting track index (0 = first song: "Fallin" by Ex Battalion)
   defaultTrackIndex: 0,
   // Romantic & Ex Battalion songs with custom cover images from your assets
   playlist: [
@@ -136,14 +136,14 @@ const CONFIG = {
   media: [
     { type: "image", src: "assets/images/image1.jpg", caption: "Sweet smiles & endless sunshine" },
     { type: "image", src: "assets/images/image2.jpg", caption: "Every adventure is better with you" },
-    { type: "video", src: "assets/videos/vid1.mp4", caption: "That laugh I could listen to forever" },
+    { type: "video", src: "assets/videos/vid1.mp4", poster: "assets/videos/vid1_poster.jpg", caption: "That laugh I could listen to forever" },
     { type: "image", src: "assets/images/image3.jpg", caption: "My favorite place is right beside you" },
     { type: "image", src: "assets/images/image4.jpg", caption: "Unforgettable little moments" },
-    { type: "video", src: "assets/videos/vid2.mp4", caption: "Caught in the sweetest moment with you" },
+    { type: "video", src: "assets/videos/vid2.mp4", poster: "assets/videos/vid2_poster.jpg", caption: "Caught in the sweetest moment with you" },
     { type: "image", src: "assets/images/image5.jpg", caption: "You make ordinary days extraordinary" },
     { type: "image", src: "assets/images/image6.jpg", caption: "Treasured memories together" },
     { type: "image", src: "assets/images/image7.jpg", caption: "Golden hour and your golden heart" },
-    { type: "video", src: "assets/videos/vid3.mp4", caption: "Pure joy whenever you're near" },
+    { type: "video", src: "assets/videos/vid3.mp4", poster: "assets/videos/vid3_poster.jpg", caption: "Pure joy whenever you're near" },
     { type: "image", src: "assets/images/image8.jpg", caption: "Forever grateful for your warmth" },
     { type: "image", src: "assets/images/image9.jpg", caption: "You and me against the world" },
     { type: "image", src: "assets/images/image10.jpg", caption: "Still giving me butterflies every day" },

@@ -1157,6 +1157,34 @@ button:focus:not(:focus-visible) {
   transform: none !important;
 }
 
+/* Center Play Icon Overlay for Video Cards in Gallery Grid */
+.gallery-item[data-type="video"] .gallery-media-thumb::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(18, 12, 24, 0.72) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") no-repeat center 50% / 22px 22px;
+  background-position: calc(50% + 2px) center;
+  border: 1.5px solid rgba(255, 117, 143, 0.65);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 117, 143, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  z-index: 2;
+}
+
+.gallery-item[data-type="video"]:hover .gallery-media-thumb::after {
+  transform: translate(-50%, -50%) scale(1.12);
+  background-color: rgba(255, 75, 110, 0.9);
+  border-color: #ffffff;
+  box-shadow: 0 6px 25px rgba(255, 75, 110, 0.6), 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
 /* Permanent Delete Button - hidden on grid cards as requested by user ("sagbot tan-awon") */
 .gallery-item-delete-btn {
   display: none !important;
@@ -1176,6 +1204,7 @@ button:focus:not(:focus-visible) {
   display: flex;
   align-items: center;
   gap: 5px;
+  z-index: 3;
 }
 
 .gallery-info {
@@ -4324,6 +4353,113 @@ button:focus:not(:focus-visible) {
     height: 19px;
   }
 }
+
+/* ==========================================================================
+   FLOATING MUSIC RESUME PROMPT & SITE TOAST NOTIFICATION
+   ========================================================================== */
+.music-resume-floating-prompt {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(35px);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.music-resume-floating-prompt.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.music-resume-prompt-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: rgba(30, 16, 25, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 117, 143, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(255, 77, 109, 0.35);
+  padding: 0.8rem 1.5rem;
+  border-radius: 9999px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  animation: promptGlowPulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes promptGlowPulse {
+  0% {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 12px rgba(255, 77, 109, 0.25);
+    border-color: rgba(255, 117, 143, 0.35);
+  }
+  100% {
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.65), 0 0 28px rgba(255, 77, 109, 0.6);
+    border-color: rgba(255, 117, 143, 0.7);
+  }
+}
+
+.music-resume-prompt-icon {
+  font-size: 1.2rem;
+  animation: promptIconBounce 1.4s ease infinite;
+}
+
+@keyframes promptIconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px) scale(1.1); }
+}
+
+.music-resume-prompt-text {
+  color: #ffe5ec;
+  letter-spacing: 0.02em;
+}
+
+.music-resume-prompt-sparkle {
+  font-size: 1rem;
+}
+
+/* Site Toast Notification */
+.site-toast-notification, #pbooth-toast {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-25px);
+  z-index: 10001;
+  background: rgba(26, 12, 22, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(244, 194, 127, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(244, 194, 127, 0.25);
+  padding: 0.65rem 1.4rem;
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.site-toast-notification.show, #pbooth-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.site-toast-icon, #pbooth-toast-icon {
+  font-size: 1.15rem;
+}
+
+.site-toast-msg, #pbooth-toast-msg {
+  color: #fff0f3;
+}
+
 
 
 

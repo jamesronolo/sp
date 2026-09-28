@@ -19,30 +19,16 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/puzzle.css">
 
-  <!-- Flow Controller: Fresh open/click starts with Puzzle; Page refresh stays on website -->
+  <!-- Flow Controller: Keep website unlocked across page reloads and refreshes -->
   <script>
     (function() {
-      var isRefresh = false;
       try {
-        var nav = performance.getEntriesByType('navigation')[0];
-        if (nav) {
-          isRefresh = (nav.type === 'reload');
-        } else if (window.performance && window.performance.navigation) {
-          isRefresh = (window.performance.navigation.type === 1);
+        var isUnlocked = (sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true') ||
+                         (localStorage.getItem('love_surprise_puzzle_unlocked') === 'true');
+        if (isUnlocked) {
+          document.documentElement.classList.add('puzzle-already-unlocked');
         }
       } catch (e) {}
-
-      // Fresh open (clicking link, new tab, opening in Live Server) -> reset to show Puzzle
-      if (!isRefresh) {
-        sessionStorage.removeItem('love_surprise_puzzle_unlocked');
-        localStorage.removeItem('love_surprise_puzzle_unlocked');
-      }
-
-      // If page was refreshed AND already unlocked, keep website open without flashing puzzle
-      if (sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
-          (isRefresh && localStorage.getItem('love_surprise_puzzle_unlocked') === 'true')) {
-        document.documentElement.classList.add('puzzle-already-unlocked');
-      }
     })();
   </script>
 </head>

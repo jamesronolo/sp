@@ -55,7 +55,8 @@
   /* ── Entry point ─────────────────────────────────────────────────────── */
   function init() {
     if (document.documentElement.classList.contains('puzzle-already-unlocked') ||
-        sessionStorage.getItem(UNLOCKED_KEY) === 'true') {
+        sessionStorage.getItem(UNLOCKED_KEY) === 'true' ||
+        localStorage.getItem(UNLOCKED_KEY) === 'true') {
       const ov = document.getElementById('puzzle-overlay');
       const qm = document.getElementById('puzzle-question-modal');
       if (ov) ov.remove();

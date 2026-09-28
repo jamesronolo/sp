@@ -43,10 +43,10 @@
   const playlist = (cfg.playlist && cfg.playlist.length > 0) ? cfg.playlist : [
     {
       id: "track-1",
-      title: "Teka Lang",
-      artist: "EMMAN",
-      src: cfg.musicSrc || "assets/audio/EMMAN - Teka Lang (Official Lyric Video).mp3",
-      cover: "assets/images/image1.jpg"
+      title: "Fallin",
+      artist: "Ex Battalion",
+      src: cfg.musicSrc || "assets/audio/Ex Battalion - Fallin (Lyrics).mp3",
+      cover: "assets/images/image7.jpg"
     }
   ];
 
@@ -118,10 +118,18 @@
   // Global Site Toast Notification
   let siteToastTimeout = null;
   function showSiteToast(msg, icon = '✨') {
-    const toastEl = document.getElementById('pbooth-toast');
-    const toastIcon = document.getElementById('pbooth-toast-icon');
-    const toastMsg = document.getElementById('pbooth-toast-msg');
-    if (!toastEl) return;
+    let toastEl = document.getElementById('pbooth-toast');
+    let toastIcon = document.getElementById('pbooth-toast-icon');
+    let toastMsg = document.getElementById('pbooth-toast-msg');
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.id = 'pbooth-toast';
+      toastEl.className = 'site-toast-notification';
+      toastEl.innerHTML = `<span id="pbooth-toast-icon" class="site-toast-icon">${icon}</span><span id="pbooth-toast-msg" class="site-toast-msg">${msg}</span>`;
+      document.body.appendChild(toastEl);
+      toastIcon = document.getElementById('pbooth-toast-icon');
+      toastMsg = document.getElementById('pbooth-toast-msg');
+    }
     if (siteToastTimeout) clearTimeout(siteToastTimeout);
     if (toastIcon) toastIcon.textContent = icon;
     if (toastMsg) toastMsg.textContent = msg;
@@ -692,6 +700,7 @@
           id: item.id,
           type: item.type,
           caption: item.caption,
+          poster: item.poster || '',
           filename: item.filename || '',
           blob: safeBlob,
           timestamp: item.timestamp || Date.now()
@@ -736,6 +745,7 @@
               type: item.type,
               caption: item.caption,
               src: src,
+              poster: item.poster || '',
               filename: item.filename,
               isUserUploaded: true,
               timestamp: item.timestamp || Date.now(),
@@ -801,12 +811,20 @@
     thumbWrapper.className = 'gallery-media-thumb';
 
     if (item.type === 'video') {
-      const vid = document.createElement('video');
-      vid.src = item.src;
-      vid.muted = true;
-      vid.playsInline = true;
-      vid.preload = 'metadata';
-      thumbWrapper.appendChild(vid);
+      if (item.poster) {
+        const posterImg = document.createElement('img');
+        posterImg.src = item.poster;
+        posterImg.alt = item.caption || `Video ${index + 1}`;
+        posterImg.loading = 'lazy';
+        thumbWrapper.appendChild(posterImg);
+      } else {
+        const vid = document.createElement('video');
+        vid.src = item.src + '#t=0.001';
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.preload = 'metadata';
+        thumbWrapper.appendChild(vid);
+      }
 
       const badge = document.createElement('div');
       badge.className = 'gallery-badge';
@@ -960,6 +978,62 @@
     }
   }
 
+  function generateVideoThumbnail(file) {
+    return new Promise((resolve) => {
+      try {
+        const vid = document.createElement('video');
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.preload = 'metadata';
+        const url = URL.createObjectURL(file);
+        vid.src = url;
+
+        let resolved = false;
+        const finish = (result) => {
+          if (!resolved) {
+            resolved = true;
+            URL.revokeObjectURL(url);
+            resolve(result);
+          }
+        };
+
+        const timer = setTimeout(() => finish(null), 3000);
+
+        vid.onloadeddata = () => {
+          try {
+            vid.currentTime = Math.min(0.5, (vid.duration || 1) / 2);
+          } catch (e) {
+            clearTimeout(timer);
+            finish(null);
+          }
+        };
+
+        vid.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = vid.videoWidth || 360;
+            canvas.height = vid.videoHeight || 640;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            clearTimeout(timer);
+            finish(dataUrl);
+          } catch (err) {
+            clearTimeout(timer);
+            finish(null);
+          }
+        };
+
+        vid.onerror = () => {
+          clearTimeout(timer);
+          finish(null);
+        };
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
   function setupGalleryUploads() {
     // Reset file input values before selection to ensure the 'change' event fires even when selecting the same file
     if (galleryPhotoInput) {
@@ -1048,10 +1122,12 @@
           const file = files[i];
           const fileUrl = URL.createObjectURL(file);
           const autoCaption = getAutoRomanticCaption('video');
+          const posterDataUrl = await generateVideoThumbnail(file);
           const newItem = {
             id: `user-gallery-video-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
             type: 'video',
             src: fileUrl,
+            poster: posterDataUrl || '',
             caption: autoCaption,
             filename: file.name,
             isUserUploaded: true,
@@ -1309,6 +1385,9 @@
     if (item.type === 'video') {
       const vid = document.createElement('video');
       vid.src = item.src;
+      if (item.poster) {
+        vid.poster = item.poster;
+      }
       vid.controls = true;
       vid.autoplay = true;
       vid.playsInline = true;
@@ -1662,44 +1741,35 @@
     }
   }
 
-  async function loadCustomSoundtracks() {
+  async function clearOldUploadedSoundtracks() {
     try {
-      const idbTracks = await loadTracksFromIndexedDB();
-      const existingFilenames = new Set(playlist.map(t => t.filename || t.title));
-      const newTracks = [];
-
-      idbTracks.forEach(tr => {
-        if (!existingFilenames.has(tr.filename) && !existingFilenames.has(tr.title)) {
-          existingFilenames.add(tr.filename);
-          existingFilenames.add(tr.title);
-          newTracks.push(tr);
-        }
-      });
-
-      if (newTracks.length > 0) {
-        // Remember currently active track before array changes so index never shifts to another song
-        const activeTrack = playlist[currentTrackIndex];
-
-        playlist.unshift(...newTracks);
-
-        // Re-align active index to point to the exact same track
-        if (activeTrack) {
-          const reFoundIdx = playlist.indexOf(activeTrack);
-          if (reFoundIdx !== -1) {
-            currentTrackIndex = reFoundIdx;
-            try {
-              localStorage.setItem('love_surprise_track_index', String(currentTrackIndex));
-            } catch (e) {}
-          }
-        }
-
-        updatePlaylistCount();
-        renderPlaylistCards();
-        updateTrackUI();
+      const db = await openMusicDB();
+      if (db && db.objectStoreNames.contains(MUSIC_STORE_NAME)) {
+        const tx = db.transaction(MUSIC_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(MUSIC_STORE_NAME);
+        store.clear();
       }
-    } catch (err) {
-      console.warn("IndexedDB restore error:", err);
+    } catch (e) {
+      console.warn("Could not clear old uploaded tracks from IndexedDB:", e);
     }
+
+    // Clean up localStorage if it pointed to a blob URL, old uploaded track, or nonexistent src
+    try {
+      const savedSrc = localStorage.getItem('love_surprise_track_src');
+      const savedId = localStorage.getItem('love_surprise_track_id');
+      const isCustomBlob = savedSrc && (savedSrc.startsWith('blob:') || savedSrc.includes('user-track-'));
+      const isCustomId = savedId && savedId.startsWith('user-track-');
+      const isValidSrc = playlist.some(t => t.src === savedSrc);
+
+      if (isCustomBlob || isCustomId || (savedSrc && !isValidSrc)) {
+        console.log("[Soundtrack] Purging old uploaded track pointer in storage, resetting to default track");
+        localStorage.removeItem('love_surprise_track_src');
+        localStorage.removeItem('love_surprise_track_id');
+        localStorage.removeItem('love_surprise_track_title');
+        localStorage.setItem('love_surprise_track_index', '0');
+        localStorage.setItem('love_surprise_track_time', '0');
+      }
+    } catch (e) {}
   }
 
   function seekToSavedTime() {
@@ -1747,6 +1817,9 @@
       if (musicPlaylistTriggerBtn) musicPlaylistTriggerBtn.style.display = 'none';
       return;
     }
+
+    // Clean up any old user-uploaded songs from IndexedDB & storage so only the 12 assets/audio songs play
+    clearOldUploadedSoundtracks();
 
     // 1. Restore saved track and playback time from localStorage across refreshes
     let savedTrackIndex = -1;
@@ -1893,18 +1966,77 @@
     // Update UI elements with initial track info
     updateTrackUI();
 
-    // Restore any custom uploaded songs from physical assets/audio and IndexedDB
-    loadCustomSoundtracks();
-
     // Save state on tab close or navigation
     window.addEventListener('beforeunload', savePlaybackState);
     window.addEventListener('pagehide', savePlaybackState);
 
+    // Floating autoplay resume prompt
+    let autoplayPromptEl = null;
+
+    function showAutoplayResumePrompt() {
+      if (document.getElementById('music-resume-prompt')) return;
+      autoplayPromptEl = document.createElement('div');
+      autoplayPromptEl.id = 'music-resume-prompt';
+      autoplayPromptEl.className = 'music-resume-floating-prompt';
+      autoplayPromptEl.setAttribute('role', 'button');
+      autoplayPromptEl.setAttribute('tabindex', '0');
+      autoplayPromptEl.setAttribute('aria-label', 'Click anywhere to resume music');
+      autoplayPromptEl.innerHTML = `
+        <div class="music-resume-prompt-content">
+          <span class="music-resume-prompt-icon">🎵</span>
+          <span class="music-resume-prompt-text">Tap anywhere to resume music</span>
+          <span class="music-resume-prompt-sparkle">💖</span>
+        </div>
+      `;
+      autoplayPromptEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerAutoplayOnGesture({ isTrusted: true });
+      });
+      document.body.appendChild(autoplayPromptEl);
+      requestAnimationFrame(() => {
+        if (autoplayPromptEl) autoplayPromptEl.classList.add('active');
+      });
+    }
+
+    function removeAutoplayResumePrompt() {
+      const prompt = document.getElementById('music-resume-prompt');
+      if (prompt) {
+        prompt.classList.remove('active');
+        setTimeout(() => {
+          if (prompt.parentNode) prompt.parentNode.removeChild(prompt);
+        }, 350);
+      }
+    }
+
+    function triggerAutoplayOnGesture(e) {
+      // Discard synthetic or programmatic events (e.g., window.scrollTo)
+      if (e && !e.isTrusted) return;
+      if (isPuzzleLocked()) return;
+
+      const isVideoTarget = e && e.target && e.target.closest && (
+        e.target.closest('[data-type="video"]') || 
+        e.target.closest('video')
+      );
+      if (isVideoTarget) {
+        hasAutoStarted = true;
+        wasMusicPlayingBeforeVideo = true;
+      } else {
+        seekToSavedTime();
+        startMusic();
+      }
+
+      removeAutoplayResumePrompt();
+      ['pointerdown', 'click', 'touchstart', 'keydown'].forEach(evt => {
+        window.removeEventListener(evt, triggerAutoplayOnGesture, { capture: true });
+      });
+    }
+
     // AUTOMATIC PLAY ON OPEN / RESUME:
-    // Only play once the entire website is open (never during the puzzle/question flash screen)
+    // Only play once the entire website is open (never during the puzzle/question screen)
     const isPuzzleLocked = () => {
       return !document.documentElement.classList.contains('puzzle-already-unlocked') &&
              sessionStorage.getItem('love_surprise_puzzle_unlocked') !== 'true' &&
+             localStorage.getItem('love_surprise_puzzle_unlocked') !== 'true' &&
              !!document.getElementById('puzzle-overlay');
     };
 
@@ -1919,34 +2051,20 @@
             seekToSavedTime();
             savePlaybackState();
             updateTrackUI();
+            removeAutoplayResumePrompt();
           }).catch((err) => {
             console.log("Browser policy held auto-resume until user interaction:", err);
-            isMusicPlaying = false;
+            // Crucial: keep playing intention so UI and localStorage reflect active music
+            isMusicPlaying = true;
             updateTrackUI();
 
-            const triggerAutoplayOnGesture = (e) => {
-              // Ignore any gesture that occurs while the puzzle is still locked
-              if (isPuzzleLocked()) return;
-
-              const isVideoTarget = e && e.target && e.target.closest && (
-                e.target.closest('[data-type="video"]') || 
-                e.target.closest('video')
-              );
-              if (isVideoTarget) {
-                hasAutoStarted = true;
-                wasMusicPlayingBeforeVideo = true;
-              } else {
-                seekToSavedTime();
-                startMusic();
-              }
-              ['click', 'touchstart', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
-                window.removeEventListener(evt, triggerAutoplayOnGesture, { capture: true });
-              });
-            };
-
-            ['click', 'touchstart', 'pointerdown', 'keydown', 'scroll'].forEach(evt => {
+            // Setup listeners for genuine user interactions ONLY (no scroll!)
+            ['pointerdown', 'click', 'touchstart', 'keydown'].forEach(evt => {
               window.addEventListener(evt, triggerAutoplayOnGesture, { capture: true, once: true });
             });
+
+            // Show floating interactive pill prompt
+            showAutoplayResumePrompt();
           });
         }
       }
@@ -2549,6 +2667,15 @@
         }
       }
 
+      // Soft Refresh (F5 / Ctrl+R / Cmd+R) — Refresh website smoothly while music keeps playing without interruption!
+      const isRefreshKey = (e.key === 'F5') || 
+                           ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r');
+      if (isRefreshKey && !e.shiftKey) {
+        e.preventDefault();
+        performSoftRefresh();
+        return;
+      }
+
       // Arrow navigation in media lightbox
       if (mediaModal && mediaModal.classList.contains('active')) {
         if (e.key === 'ArrowRight') {
@@ -2558,6 +2685,33 @@
         }
       }
     });
+
+  /* ==========================================================================
+     SOFT REFRESH (F5 / CTRL+R) — Refresh website without stopping music!
+     ========================================================================== */
+  function performSoftRefresh() {
+    // 1. Keep audioPlayer playing uninterrupted!
+    // 2. Re-trigger rain of falling emojis and memory polaroids
+    initRain();
+    initEmojiRain();
+
+    // 3. Re-run live counter / clock
+    initCounter();
+
+    // 4. Smoothly scroll back to top of the page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 5. Shuffle and update love notes
+    if (typeof displayRandomNote === 'function') {
+      displayRandomNote();
+    }
+
+    // 6. Update track UI in case anything changed
+    updateTrackUI();
+
+    // 7. Show gorgeous floating feedback toast
+    showSiteToast("Refreshed! Music uninterrupted 🎵💖", "✨");
+  }
 
     // Prevent sticky active/focus states on buttons after mouse click or tap
     document.addEventListener('mouseup', (e) => {
@@ -5156,7 +5310,8 @@
 
     // Preserve scroll position on refresh if already unlocked
     const isUnlocked = document.documentElement.classList.contains('puzzle-already-unlocked') ||
-                       sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true';
+                       sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
+                       localStorage.getItem('love_surprise_puzzle_unlocked') === 'true';
     if (isUnlocked) {
       const savedPos = sessionStorage.getItem('love_surprise_scroll_pos');
       if (savedPos !== null && parseInt(savedPos, 10) > 0) {
@@ -5170,6 +5325,7 @@
   // Save scroll position for refresh restoration
   window.addEventListener('scroll', () => {
     if (sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
+        localStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
         document.documentElement.classList.contains('puzzle-already-unlocked')) {
       sessionStorage.setItem('love_surprise_scroll_pos', window.scrollY);
     }
