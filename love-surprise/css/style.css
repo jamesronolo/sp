@@ -4217,34 +4217,7 @@ button:focus:not(:focus-visible) {
   color: #fff;
 }
 
-/* Toast */
-.pbooth-toast {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%) translateY(30px);
-  background: rgba(24, 12, 28, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 117, 143, 0.4);
-  border-radius: var(--radius-full);
-  padding: 8px 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 117, 143, 0.3);
-  z-index: 2000;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
 
-.pbooth-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
 
 /* Mobile Responsiveness for Photobooth */
 @media (max-width: 600px) {
@@ -4422,11 +4395,15 @@ button:focus:not(:focus-visible) {
   font-size: 1rem;
 }
 
-/* Site Toast Notification */
-.site-toast-notification, #pbooth-toast {
-  position: fixed;
-  top: 1.5rem;
-  left: 50%;
+/* Site & Photobooth Toast Notification (Compact Pill at Top) */
+.site-toast-notification,
+#pbooth-toast,
+.pbooth-toast {
+  position: fixed !important;
+  top: 1.5rem !important;
+  bottom: auto !important;
+  left: 50% !important;
+  right: auto !important;
   transform: translateX(-50%) translateY(-25px);
   z-index: 10001;
   background: rgba(26, 12, 22, 0.94);
@@ -4441,22 +4418,33 @@ button:focus:not(:focus-visible) {
   font-weight: 500;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
+  width: auto !important;
+  max-width: 90vw;
+  height: auto !important;
+  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.site-toast-notification.show, #pbooth-toast.show {
+.site-toast-notification.show,
+#pbooth-toast.show,
+.pbooth-toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
 
-.site-toast-icon, #pbooth-toast-icon {
+.site-toast-icon,
+#pbooth-toast-icon,
+.pbooth-toast .toast-icon {
   font-size: 1.15rem;
 }
 
-.site-toast-msg, #pbooth-toast-msg {
+.site-toast-msg,
+#pbooth-toast-msg,
+.pbooth-toast .toast-msg {
   color: #fff0f3;
 }
 

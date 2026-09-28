@@ -2036,7 +2036,6 @@
     const isPuzzleLocked = () => {
       return !document.documentElement.classList.contains('puzzle-already-unlocked') &&
              sessionStorage.getItem('love_surprise_puzzle_unlocked') !== 'true' &&
-             localStorage.getItem('love_surprise_puzzle_unlocked') !== 'true' &&
              !!document.getElementById('puzzle-overlay');
     };
 
@@ -5310,8 +5309,7 @@
 
     // Preserve scroll position on refresh if already unlocked
     const isUnlocked = document.documentElement.classList.contains('puzzle-already-unlocked') ||
-                       sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
-                       localStorage.getItem('love_surprise_puzzle_unlocked') === 'true';
+                       sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true';
     if (isUnlocked) {
       const savedPos = sessionStorage.getItem('love_surprise_scroll_pos');
       if (savedPos !== null && parseInt(savedPos, 10) > 0) {
@@ -5325,7 +5323,6 @@
   // Save scroll position for refresh restoration
   window.addEventListener('scroll', () => {
     if (sessionStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
-        localStorage.getItem('love_surprise_puzzle_unlocked') === 'true' ||
         document.documentElement.classList.contains('puzzle-already-unlocked')) {
       sessionStorage.setItem('love_surprise_scroll_pos', window.scrollY);
     }

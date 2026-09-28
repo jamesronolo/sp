@@ -54,9 +54,7 @@
 
   /* ── Entry point ─────────────────────────────────────────────────────── */
   function init() {
-    if (document.documentElement.classList.contains('puzzle-already-unlocked') ||
-        sessionStorage.getItem(UNLOCKED_KEY) === 'true' ||
-        localStorage.getItem(UNLOCKED_KEY) === 'true') {
+    if (document.documentElement.classList.contains('puzzle-already-unlocked')) {
       const ov = document.getElementById('puzzle-overlay');
       const qm = document.getElementById('puzzle-question-modal');
       if (ov) ov.remove();
@@ -461,7 +459,7 @@
   /* ── Question answer handlers ────────────────────────────────────────── */
   function onAnswerYes() {
     sessionStorage.setItem(UNLOCKED_KEY, 'true');
-    localStorage.setItem(UNLOCKED_KEY, 'true');
+    try { localStorage.removeItem(UNLOCKED_KEY); } catch (e) {}
     document.documentElement.classList.add('puzzle-already-unlocked');
     spawnConfetti();
 
